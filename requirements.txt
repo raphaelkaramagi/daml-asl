@@ -1,29 +1,28 @@
-# Deep Learning Framework
-tensorflow==2.20.0
-keras==3.11.3
+tensorflow
+keras
 
 # Computer Vision
-opencv-python==4.12.0.88
-mediapipe==0.10.21
-pillow==12.0.0
+opencv-python
+mediapipe
+pillow
 
 # Data Processing & Scientific Computing
-numpy==2.2.6
-pandas==2.3.3
-scipy==1.16.2
-scikit-learn==1.7.2
+numpy
+pandas
+scipy
+scikit-learn
 
 # Visualization
-matplotlib==3.10.7
+matplotlib
 
 # Jupyter Environment
-jupyter==1.1.1
-jupyterlab==4.4.9
-ipykernel==7.0.1
-ipywidgets==8.1.7
+jupyter
+jupyterlab
+ipykernel
+ipywidgets
 
 # Utilities
-tqdm==4.67.1
+tqdm
 
 # TensorBoard (for model monitoring)
-tensorboard==2.20.0
+tensorboard
