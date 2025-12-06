@@ -1,112 +1,84 @@
-# DAML-ASL: American Sign Language Recognition
+# ASL Alphabet Recognition
 
-Deep learning project for recognizing American Sign Language (ASL) alphabet gestures using TensorFlow and Keras.
+Deep learning models for classifying American Sign Language alphabet gestures.
 
 ## Overview
 
-This project implements a computer vision model to classify ASL alphabet signs (A-Z, plus special characters) from images.
+This project implements two approaches for ASL alphabet recognition (A-Z + special characters):
+1. **ResNet50 Transfer Learning** - Fine-tuned CNN on raw images
+2. **Landmark Neural Network** - Lightweight NN on MediaPipe hand landmarks
 
-**Dataset:** 87,000+ images across 29 classes from the [Kaggle ASL Alphabet Dataset](https://www.kaggle.com/datasets/grassknoted/asl-alphabet)
+**Dataset**: 87,000+ images, 29 classes ([Kaggle ASL Alphabet](https://www.kaggle.com/datasets/grassknoted/asl-alphabet))
 
 ## Quick Start
 
-See [SETUP.md](SETUP.md) for detailed installation and setup instructions.
-
 ```bash
-# 1. Create environment
+# Setup
 conda create -n daml-asl python=3.11 -y
 conda activate daml-asl
-
-# 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Run notebooks
+# Download data (required for training)
+# Get from: https://www.kaggle.com/datasets/grassknoted/asl-alphabet
+# Extract to: data/asl_alphabet_train/ and data/asl_alphabet_test/
+
+# Run demo
+python demo.py
+
+# Or run notebooks
 jupyter notebook
 ```
 
-## Notebooks
-
-### Data Preparation
-- `01-data-preprocessing.ipynb` - Data loading, augmentation, and preprocessing pipeline
-- `03-mediapipe-feature-extraction.ipynb` - Hand landmark extraction using MediaPipe
-
-### Model Training
-- `05-training-approach-1.ipynb` - ResNet50 transfer learning on raw images
-- `06-training-approach-2-landmarks.ipynb` - Neural network on hand landmarks
-
-### Evaluation
-- `07-model-comparison-evaluation.ipynb` - Model comparison and test set evaluation
-
-## Approaches
-
-### Approach 1: ResNet50 Transfer Learning
-- Fine-tuned ResNet50 pre-trained on ImageNet
-- Two-phase training: frozen base → fine-tuning
-- Input: 96×96 RGB images with data augmentation
-- Expected accuracy: 95-99% on validation set
-
-### Approach 2: Landmark-Based Neural Network
-- MediaPipe hand landmark extraction (21 landmarks × 3 coordinates = 63 features)
-- Lightweight neural network (128→64→29 architecture)
-- Translation-invariant (normalized to wrist position)
-- Expected accuracy: 85-95% on test set
-- Fast inference, suitable for mobile/edge devices
-
-## Quick Start Guide
-
-See [TRAINING_GUIDE.md](TRAINING_GUIDE.md) for detailed step-by-step instructions.
+## Demo
 
 ```bash
-# 1. Extract landmarks (required for Approach 2)
-# Run: notebooks/03-mediapipe-feature-extraction.ipynb (~30 min)
+# Test on all test images
+python demo.py
 
-# 2. Train Approach 1 (ResNet50)
-# Run: notebooks/05-training-approach-1.ipynb (~2-4 hours with GPU)
-
-# 3. Train Approach 2 (Landmarks)
-# Run: notebooks/06-training-approach-2-landmarks.ipynb (~5-10 min)
-
-# 4. Compare models
-# Run: notebooks/07-model-comparison-evaluation.ipynb (~2 min)
+# Test on specific image
+python demo.py path/to/hand_image.jpg
 ```
-
-## Tech Stack
-
-- **TensorFlow/Keras** - Deep learning framework
-- **MediaPipe** - Hand landmark detection
-- **NumPy/Pandas** - Data manipulation
-- **Matplotlib/Seaborn** - Visualization
-- **OpenCV** - Image processing
-- **scikit-learn** - ML utilities and evaluation
-- **Jupyter** - Interactive development
 
 ## Project Structure
 
 ```
-daml-asl/
-├── data/                              # ASL alphabet dataset
-│   ├── asl_alphabet_train/           # Training images (87,000)
-│   ├── asl_alphabet_test/            # Test images (29)
-│   └── asl_landmarks_train.csv       # Extracted landmarks (generated)
-├── notebooks/                         # Jupyter notebooks
+├── models/                    # Trained models
+│   ├── best_asl_resnet50_phase2.h5   # ResNet50 (71.43% test acc)
+│   └── asl_resnet50_final.keras
+├── data/                      # Data files
+│   ├── nn_landmark_model.keras       # Landmark NN (98.88% val acc)
+│   ├── label_encoder.joblib
+│   └── scaler.joblib
+├── notebooks/                 # Training notebooks
 │   ├── 01-data-preprocessing.ipynb
 │   ├── 03-mediapipe-feature-extraction.ipynb
 │   ├── 05-training-approach-1.ipynb
 │   ├── 06-training-approach-2-landmarks.ipynb
-│   ├── 07-model-comparison-evaluation.ipynb
-│   └── landmark_processor.py          # Helper for parallel processing
-├── requirements.txt                   # Python dependencies
-├── SETUP.md                          # Setup instructions
-├── TRAINING_GUIDE.md                 # Step-by-step training guide
-└── README.md                         # This file
+│   └── 07-model-comparison-evaluation.ipynb
+└── demo.py                    # Quick demo script
 ```
 
-## Requirements
+## Results
 
-- Python 3.11+
-- TensorFlow 2.20+
+### Validation/Test Performance
 
+| Approach | Val Accuracy | Test Accuracy | Model Size | Training Time |
+|----------|--------------|---------------|------------|---------------|
+| **ResNet50** | 47.24% | **71.43%** | 208 MB | ~4 hours |
+| **Landmark NN** | 98.88% | 53.57% | ~1 MB | ~10 min |
 
-## Acknowledgments
+**Winner on Test Set**: ResNet50 (+17.86% higher accuracy)
 
-Dataset provided by [Kaggle ASL Alphabet](https://www.kaggle.com/datasets/grassknoted/asl-alphabet)
+*Note: Test set contains only 28 images (missing "del" class). Landmark NN achieved 98.88% on its validation set.*
+
+## Tech Stack
+
+TensorFlow • Keras • MediaPipe • OpenCV • scikit-learn
+
+## Usage
+
+See [SETUP.md](SETUP.md) for detailed instructions.
+
+---
+
+**Dataset**: [Kaggle ASL Alphabet](https://www.kaggle.com/datasets/grassknoted/asl-alphabet)

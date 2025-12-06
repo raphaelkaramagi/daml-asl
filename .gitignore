@@ -207,6 +207,18 @@ marimo/_lsp/
 __marimo__/
 
 # Local data files
-data/
-images/
 .DS_Store
+
+# Large training/test image data (download from Kaggle)
+data/asl_alphabet_train/
+data/asl_alphabet_test/
+data/asl_alphabet_test 2/
+
+# Keep these data files (small, needed for demo)
+!data/asl_landmarks_train.csv
+!data/nn_landmark_model.keras
+!data/label_encoder.joblib
+!data/scaler.joblib
+
+# Models folder - INCLUDE in repo for demo
+# !models/
