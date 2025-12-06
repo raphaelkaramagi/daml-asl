@@ -1,0 +1,200 @@
+﻿AITP Fa25 – House Price Prediction Project Spec Doc 
+
+
+
+
+Project Name: ASL Project
+
+
+PM: Eddie Huang
+
+
+Members:  
+
+
+Project Description: Detect user's hand landmarks to detect which alphabet they're signing ← potential to expand scope to include words/phrases from the ASL dictionary (intermediate), account for differences in grammar/sentence structure (advanced). 
+
+
+Key Sprint Deliverable: Detect user's hand landmarks to detect which alphabet they're signing
+
+
+
+
+Milestone 1: Setup, Data Curation, EDA
+Week 1 –– Setup
+
+
+Goals 
+	Description (links, resources)
+	Work Hours
+	Point Person (if applicable)
+	Environment setup #1
+	Create conda environment & local directory for project  
+	1
+	
+
+	Environment setup #2
+	Create a shared github repo with a requirements.txt file
+	2
+	
+
+	Install github repo
+	Clone the github repo, install dependencies via pip
+	1
+	
+
+	Download data
+	Download ASL alphabet data from https://www.kaggle.com/datasets/grassknoted/asl-alphabet 
+	1 
+	
+
+	
+
+Week 2 –– Approach 1: Loading & preparing data
+
+
+
+
+Goals 
+	Description (links, resources)
+	Work Hours
+	Point Person (if applicable)
+	Learn about image preprocessing!
+	Learn about how we can best prepare our data for object detection. 
+* Downsampling
+* Data Augmentation
+* and many more 
+What data augmentation & processing is needed in our case, if any?
+	1-2
+	
+
+	Learn about Keras image preprocessing 
+	Learn about how the library keras.preprocessing.image can help you load images files and process data for object detection
+	3-4
+	
+
+	Load & Process!
+	Based on what you learnt this week, load, process, and augment the data into training, validation, and test sets
+	3-4
+	
+
+	
+
+Week 3/4 –– Approach 2: Loading & preparing data
+
+
+Goals 
+	Description (links, resources)
+	Work Hours
+	Point Person (if applicable)
+	Use Mediapipe to extract hand landmarks from image 
+	Create a pipeline to to use Mediapipe’s hand landmark detection model to extract hand landmarks from our dataset images 
+	4-6
+	
+
+	Clean and process Mediapipe landmarks
+	We want to clean raw landmark coordinates into feature vectors. This includes:
+* Removing depth (or z dimension)
+* Centralizing coordinates to center point of hand
+* Flattening to 1D array 
+* Normalization w.r.t. max value 
+	4-6
+	
+
+	Prepare data (a bit differently)
+	Define and obtain the train, validation, test dataset for ML training. Specifically, we want a separate X_train, y_train, X_test, y_test 
+	2
+	
+
+	
+
+
+
+Milestone 2: Model Training
+
+
+Week 5 – Approach 1: Training Model
+
+
+
+
+Goals 
+	Description (links, resources)
+	Work Hours
+	Point Person (if applicable)
+	Learn about how fine-tuning object detection models work
+	How do popular pre-trained object detection models like ResNet and MobileNet work? How does one fine-tune them? 
+* What does it mean to freeze weights and adding layers?
+* What is batch size, optimizers, etc. and how do they affect model training? How should I choose these parameters
+	3-4
+	
+
+	Fine-tune object detection model on Tensorflow
+	Define the transfer learning pipeline & fine-tune pre-trained object detection model
+* Use ResNet or VGG, etc. 
+* Use Keras to add layers, define parameters, etc. 
+	3-4
+	
+
+	Evaluate results!
+	Evaluate our results. How does the model perform on the dataset test class? 
+	1-2
+	
+
+	
+
+
+
+Week 6 –– Approach 2: Training Model
+
+
+Goals 
+	Description (links, resources)
+	Work Hours
+	Point Person (if applicable)
+	Decide a classifier to use & learn about it
+	Use a standard machine learning/deep learning model to train landmark data. Examples you could use include:
+* Random Forest / XGBoost
+* LSTMs / RNNs
+
+
+What are the strengths & weaknesses of these approaches? What are the assumptions? What’s the best approach?
+	3-4
+	
+
+	Train model
+	Train the model using an open-source package (scikit-learn, TensorFlow, etc.)
+	1-2
+	
+
+	Evaluate the model!
+	Again, let’s evaluate our model. How does it compare to an object detection model? 
+	3
+	
+
+	
+
+Final Project:
+
+
+For your final presentation, assume you are pitching your ASL recognition system to an accessibility non-profit or an educational organization for the deaf community. Use your model to address practical, real-world questions such stakeholders would ask, such as:
+* How accurate is your system across different users and lighting conditions?
+
+* What are the most important hand landmark features your model relies on for classification?
+
+* How could this be scaled from alphabet recognition to full words or phrases?
+
+* What would a classroom or assistive device integration look like?
+
+Think from the perspective of impact and usability, not just accuracy metrics—show how this could become a meaningful assistive technology product.
+
+
+Future Work/Extra Time
+
+
+Week 7 and beyond –– any additional follow-up work, if time permits. Ideas include:
+   * Building a webcam that takes live video input, processes frames using our models, and returns finger spelt phrase.
+   * Doing more R&D into ways we can improve performance on ASL speech detection:
+   * Improving scope to phrases, not just alphabet 
+   * Using BERT for context-aware speech detection.  
+   * Writing Medium blog post summarizing findings
