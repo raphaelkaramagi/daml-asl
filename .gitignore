@@ -214,13 +214,13 @@ data/asl_alphabet_train/
 data/asl_alphabet_test/
 data/asl_alphabet_test 2/
 
-# Keep these small data files
-!data/asl_landmarks_train.csv
+# Keep only small essential files
 !data/label_encoder.joblib
 !data/scaler.joblib
 
-# Trained models (too large for git, train locally)
+# Trained models and large data files (too large for git, generate locally)
 models/
+data/asl_landmarks_train.csv
 data/*.keras
 data/*.h5
 *.h5
