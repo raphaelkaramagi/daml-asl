@@ -207,6 +207,7 @@ marimo/_lsp/
 __marimo__/
 
 # Local data files
+<<<<<<< HEAD
 .DS_Store
 
 # Large training/test image data (download from Kaggle)
@@ -225,3 +226,6 @@ data/*.keras
 data/*.h5
 *.h5
 *.keras
+=======
+/data
+>>>>>>> parent of a8aa6ab (Resolved conflicts and fixed existing issues - ready for training)
