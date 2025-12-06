@@ -214,11 +214,14 @@ data/asl_alphabet_train/
 data/asl_alphabet_test/
 data/asl_alphabet_test 2/
 
-# Keep these data files (small, needed for demo)
+# Keep these small data files
 !data/asl_landmarks_train.csv
-!data/nn_landmark_model.keras
 !data/label_encoder.joblib
 !data/scaler.joblib
 
-# Models folder - INCLUDE in repo for demo
-# !models/
+# Trained models (too large for git, train locally)
+models/
+data/*.keras
+data/*.h5
+*.h5
+*.keras

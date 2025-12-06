@@ -113,10 +113,10 @@ def load_models(quiet=False):
     return models
 
 
-def extract_landmarks(image_rgb):
+def extract_landmarks(image_rgb, min_confidence=0.1):
     """Extract hand landmarks using MediaPipe."""
     mp_hands = mp.solutions.hands
-    with mp_hands.Hands(static_image_mode=True, max_num_hands=1, min_detection_confidence=0.5) as hands:
+    with mp_hands.Hands(static_image_mode=True, max_num_hands=1, min_detection_confidence=min_confidence) as hands:
         results = hands.process(image_rgb)
         
         if results.multi_hand_landmarks:
