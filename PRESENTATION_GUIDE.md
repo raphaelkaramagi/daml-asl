@@ -451,9 +451,4 @@ Final Translation
 - **21 landmarks** - Hand keypoints detected
 - **4.5 hours** - Total training time
 
----
-
-**Good luck with your presentation!** 🚀
-
-You've built something meaningful that could genuinely help people. Focus on the impact, acknowledge the challenges, and show your understanding of the technical trade-offs.
 
