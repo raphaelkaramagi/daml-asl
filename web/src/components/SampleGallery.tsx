@@ -63,7 +63,7 @@ export default function SampleGallery() {
         />
       </div>
 
-      <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-15 gap-2 mb-8">
+      <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-[repeat(15,minmax(0,1fr))] gap-2 mb-8">
         {filteredClasses.map((cls) => (
           <motion.button
             key={cls}

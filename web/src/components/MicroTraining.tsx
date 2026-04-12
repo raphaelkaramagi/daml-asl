@@ -213,11 +213,11 @@ export default function MicroTraining() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                   <XAxis dataKey="epoch" tick={{ fill: '#71717a', fontSize: 11 }} stroke="#3f3f46" />
                   <YAxis tick={{ fill: '#71717a', fontSize: 11 }} stroke="#3f3f46" domain={[0, 1]}
-                    tickFormatter={(v: number) => `${(v * 100).toFixed(0)}%`}
+                    tickFormatter={(v) => `${(Number(v) * 100).toFixed(0)}%`}
                   />
                   <Tooltip
                     contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 8, fontSize: 12 }}
-                    formatter={(v: number) => `${(v * 100).toFixed(2)}%`}
+                    formatter={(v) => `${(Number(v) * 100).toFixed(2)}%`}
                   />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Line type="monotone" dataKey="accuracy" stroke="#3b82f6" strokeWidth={2} dot={false} name="Train" isAnimationActive={false} />
@@ -237,7 +237,7 @@ export default function MicroTraining() {
                   <YAxis tick={{ fill: '#71717a', fontSize: 11 }} stroke="#3f3f46" />
                   <Tooltip
                     contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 8, fontSize: 12 }}
-                    formatter={(v: number) => v.toFixed(4)}
+                    formatter={(v) => Number(v).toFixed(4)}
                   />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Line type="monotone" dataKey="loss" stroke="#ef4444" strokeWidth={2} dot={false} name="Train" isAnimationActive={false} />

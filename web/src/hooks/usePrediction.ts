@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { predictWithLandmarkNN, predictWithResnet, getTopPredictions, type Prediction } from '@/lib/models';
+import { predictWithLandmarkNN, predictWithResnet, getTopPredictions, loadPreprocessing, type Prediction } from '@/lib/models';
 import { detectHandFromImage, type HandDetectionResult } from '@/lib/landmarks';
 import { CLASS_NAMES } from '@/lib/constants';
 import { useAppStore } from '@/store/app-store';
@@ -45,8 +45,8 @@ export function usePrediction() {
 
         if (enableLandmark && landmarkLoaded && handResult) {
           landmarkPred = predictWithLandmarkNN(handResult.features);
-          const classes = (await import('@/lib/models').then((m) => m.loadPreprocessing())).classes;
-          landmarkTop3 = getTopPredictions(landmarkPred.allConfidences, classes);
+          const preprocessing = await loadPreprocessing();
+          landmarkTop3 = getTopPredictions(landmarkPred.allConfidences, preprocessing.classes);
         }
 
         setResult({

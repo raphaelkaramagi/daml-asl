@@ -47,9 +47,6 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
 
         if (enableLandmark && landmarkLoaded && handResult) {
           const pred = predictWithLandmarkNN(handResult.features);
-          const classes = (useAppStore.getState() as { enableLandmark: boolean }).enableLandmark
-            ? [...CLASS_NAMES]
-            : [];
           result.landmark = pred;
           result.landmarkTop3 = getTopPredictions(pred.allConfidences, [...CLASS_NAMES]);
         }
@@ -97,7 +94,7 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
 
   return (
     <div className="space-y-3">
-      <div className="relative rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
+      <div className="relative rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 min-h-[240px]">
         <video
           ref={videoRef}
           className="w-full h-auto max-h-[360px] object-cover"

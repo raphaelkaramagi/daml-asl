@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ASL Alphabet Recognition - Web Demo
 
-## Getting Started
+Interactive web demo for the ASL Alphabet Recognition project. All inference runs entirely in the browser using TensorFlow.js and MediaPipe.
 
-First, run the development server:
+## Features
+
+- **Live Prediction** - Upload images or use webcam for real-time ASL hand sign classification
+- **Two Models** - Side-by-side comparison of ResNet50 (pixel-based) and Landmark NN (geometry-based)
+- **Training Replay** - Animated visualization of the real training process with actual metrics
+- **Micro Training** - Train a small neural network live in your browser
+- **Model Comparison** - Detailed architecture and performance comparison
+- **Sample Gallery** - Browse and predict on sample images from each class
+
+## Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Preparing Models
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Run the Python scripts from the project root to convert models and prepare assets:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+python scripts/convert_models.py       # Convert Keras models to TF.js format
+python scripts/prepare_samples.py      # Resize and copy sample images
+python scripts/extract_training_data.py # Extract training metrics JSON
+```
 
-## Learn More
+## Deployment
 
-To learn more about Next.js, take a look at the following resources:
+Deployed via Vercel. Set the root directory to `web/` in Vercel project settings.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run build   # Static export to out/
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Tech Stack
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Next.js, TypeScript, Tailwind CSS, TensorFlow.js, MediaPipe, Recharts, Framer Motion, Zustand

@@ -155,7 +155,7 @@ export default function TrainingReplay() {
                   tick={{ fill: '#71717a', fontSize: 11 }}
                   stroke="#3f3f46"
                   domain={[0, 1]}
-                  tickFormatter={(v: number) => `${(v * 100).toFixed(0)}%`}
+                  tickFormatter={(v) => `${(Number(v) * 100).toFixed(0)}%`}
                 />
                 <Tooltip
                   contentStyle={{
@@ -164,7 +164,7 @@ export default function TrainingReplay() {
                     borderRadius: 8,
                     fontSize: 12,
                   }}
-                  formatter={(v: number) => `${(v * 100).toFixed(2)}%`}
+                  formatter={(v) => `${(Number(v) * 100).toFixed(2)}%`}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Line
@@ -224,7 +224,7 @@ export default function TrainingReplay() {
                     borderRadius: 8,
                     fontSize: 12,
                   }}
-                  formatter={(v: number) => v.toFixed(4)}
+                  formatter={(v) => Number(v).toFixed(4)}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Line
