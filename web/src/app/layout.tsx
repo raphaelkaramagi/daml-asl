@@ -7,6 +7,8 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
+const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.VERCEL_PROJECT_PRODUCTION_URL
@@ -18,24 +20,24 @@ export const metadata: Metadata = {
   title: 'ASL Alphabet Recognition',
   description:
     'Interactive demo of deep learning models for American Sign Language alphabet classification. Two approaches compared: ResNet50 transfer learning and Landmark Neural Network.',
-  manifest: '/manifest.json',
+  manifest: `${base}/manifest.json`,
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icons/icon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/icons/icon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: `${base}/favicon.ico`, sizes: 'any' },
+      { url: `${base}/icons/icon-32x32.png`, sizes: '32x32', type: 'image/png' },
+      { url: `${base}/icons/icon-16x16.png`, sizes: '16x16', type: 'image/png' },
+      { url: `${base}/icons/icon-192x192.png`, sizes: '192x192', type: 'image/png' },
     ],
-    shortcut: '/favicon.ico',
+    shortcut: `${base}/favicon.ico`,
     apple: [
-      { url: '/icons/icon-180x180.png', sizes: '180x180', type: 'image/png' },
+      { url: `${base}/icons/icon-180x180.png`, sizes: '180x180', type: 'image/png' },
     ],
   },
   openGraph: {
     title: 'ASL Alphabet Recognition',
     description:
       'Interactive demo comparing ResNet50 and Landmark NN for American Sign Language alphabet classification. Live webcam predictions, training replay, and more.',
-    images: [{ url: '/og-image.png', width: 512, height: 512 }],
+    images: [{ url: `${base}/og-image.png`, width: 512, height: 512 }],
     type: 'website',
   },
   twitter: {
@@ -43,11 +45,11 @@ export const metadata: Metadata = {
     title: 'ASL Alphabet Recognition',
     description:
       'Interactive demo comparing deep learning approaches for ASL alphabet classification.',
-    images: ['/og-image.png'],
+    images: [`${base}/og-image.png`],
   },
   other: {
     'msapplication-TileColor': '#09090b',
-    'msapplication-TileImage': '/icons/icon-144x144.png',
+    'msapplication-TileImage': `${base}/icons/icon-144x144.png`,
   },
 };
 

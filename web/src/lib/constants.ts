@@ -11,10 +11,12 @@ export const NUM_LANDMARKS = 21;
 export const LANDMARK_FEATURES = NUM_LANDMARKS * 3; // 63
 export const RESNET_INPUT_SIZE = 96;
 
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+
 export const MODEL_PATHS = {
-  landmarkNN: '/models/landmark-nn/model.json',
-  resnet: '/models/resnet-graph/model.json',
-  preprocessing: '/models/preprocessing.json',
+  landmarkNN: `${BASE}/models/landmark-nn/model.json`,
+  resnet: `${BASE}/models/resnet-graph/model.json`,
+  preprocessing: `${BASE}/models/preprocessing.json`,
 } as const;
 
 export const HAND_CONNECTIONS: [number, number][] = [
