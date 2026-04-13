@@ -91,7 +91,8 @@ export default function LandmarkVisualizer({
       ref={canvasRef}
       width={width}
       height={height}
-      className={`absolute inset-0 pointer-events-none ${className}`}
+      className={`absolute top-0 left-0 pointer-events-none ${className}`}
+      style={{ width, height }}
     />
   );
 }

@@ -175,12 +175,13 @@
       ]
     },
     "summary": {
-      "architecture": "ResNet50 + GlobalAvgPool + Dense(128) + Dense(29)",
-      "input": "96x96 RGB images",
+      "architecture": "ResNet50 + GlobalAvgPool + Dropout(0.2) + Dense(128) + Dropout(0.2) + Dense(29)",
+      "input": "96x96 RGB images (normalized /255)",
       "parameters": "~23.6M",
-      "modelSize": "208 MB",
-      "testAccuracy": 71.43,
-      "trainingTime": "~4 hours"
+      "modelSize": "208 MB (23 MB quantized uint8)",
+      "bestValAccuracy": 48.06,
+      "testAccuracy": 67.9,
+      "trainingTime": "~4 hours (Phase 1: 10 epochs frozen, Phase 2: 10 epochs fine-tuning)"
     }
   },
   "landmark": {
@@ -413,14 +414,15 @@
       ]
     },
     "summary": {
-      "architecture": "Dense(128, ReLU) \u2192 Dropout(0.3) \u2192 Dense(64, ReLU) \u2192 Dropout(0.3) \u2192 Dense(29, Softmax)",
-      "input": "63 features (21 landmarks \u00d7 3 coordinates)",
+      "architecture": "Dense(128, ReLU) -> Dropout(0.3) -> Dense(64, ReLU) -> Dropout(0.3) -> Dense(29, Softmax)",
+      "input": "63 features (21 landmarks x 3 coordinates, StandardScaler)",
       "parameters": "~18K",
       "modelSize": "~244 KB",
+      "bestValAccuracy": 98.97,
       "testAccuracy": 98.88,
-      "finalTestAccuracy": 71.43,
-      "trainingTime": "~10 min",
-      "keyFinding": "100% accuracy when hands are detected. Bottleneck is MediaPipe detection, not classification."
+      "testAccuracyPhotos": 53.57,
+      "trainingTime": "~10 min (29 epochs, early stopping)",
+      "keyFinding": "Near-perfect classification when hand is detected. Bottleneck is MediaPipe hand detection, not the classifier."
     }
   }
 }

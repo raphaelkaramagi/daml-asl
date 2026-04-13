@@ -17,10 +17,24 @@ interface WebcamFeedProps {
 
 export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
   const { videoRef, active, error, start, stop } = useWebcam();
+  const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number>(0);
   const [landmarks, setLandmarks] = useState<NormalizedLandmark[] | null>(null);
-  const { enableResnet, enableLandmark, resnetLoaded, landmarkLoaded } = useAppStore();
+  const [displaySize, setDisplaySize] = useState({ width: 640, height: 480 });
   const lastPredTime = useRef(0);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(() => {
+      const video = videoRef.current;
+      if (video && video.videoWidth > 0) {
+        setDisplaySize({ width: video.clientWidth, height: video.clientHeight });
+      }
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [videoRef]);
 
   const processFrame = useCallback(() => {
     const video = videoRef.current;
@@ -29,12 +43,18 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
       return;
     }
 
+    if (video.clientWidth > 0) {
+      setDisplaySize({ width: video.clientWidth, height: video.clientHeight });
+    }
+
     const now = performance.now();
     if (now - lastPredTime.current < 200) {
       animRef.current = requestAnimationFrame(processFrame);
       return;
     }
     lastPredTime.current = now;
+
+    const { enableResnet, enableLandmark, resnetLoaded, landmarkLoaded } = useAppStore.getState();
 
     try {
       const handResult = detectHandFromVideo(video, now);
@@ -70,7 +90,7 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
     }
 
     animRef.current = requestAnimationFrame(processFrame);
-  }, [videoRef, enableResnet, enableLandmark, resnetLoaded, landmarkLoaded, onPrediction]);
+  }, [videoRef, onPrediction]);
 
   useEffect(() => {
     if (active) {
@@ -94,10 +114,10 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
 
   return (
     <div className="space-y-3">
-      <div className="relative rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 min-h-[240px]">
+      <div ref={containerRef} className="relative rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 min-h-[240px]">
         <video
           ref={videoRef}
-          className="w-full h-auto max-h-[360px] object-cover"
+          className="w-full h-auto"
           muted
           playsInline
           style={{ transform: 'scaleX(-1)' }}
@@ -105,8 +125,8 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
         {active && (
           <LandmarkVisualizer
             landmarks={landmarks ? landmarks.map(lm => ({ ...lm, x: 1 - lm.x })) : null}
-            width={videoRef.current?.videoWidth ?? 640}
-            height={videoRef.current?.videoHeight ?? 480}
+            width={displaySize.width}
+            height={displaySize.height}
           />
         )}
         {!active && (

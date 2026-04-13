@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import Card from './ui/Card';
 import ConfidenceBar from './ui/ConfidenceBar';
+import { useAppStore } from '@/store/app-store';
 import type { PredictionResult } from '@/hooks/usePrediction';
 
 interface PredictionDisplayProps {
@@ -17,6 +18,8 @@ function ModelResultCard({
   top3,
   color,
   noHand,
+  disabled,
+  notLoaded,
 }: {
   title: string;
   badge: string;
@@ -24,7 +27,23 @@ function ModelResultCard({
   top3?: { label: string; confidence: number }[];
   color: string;
   noHand?: boolean;
+  disabled?: boolean;
+  notLoaded?: boolean;
 }) {
+  if (disabled) {
+    return (
+      <Card className="flex-1 opacity-40">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-sm font-semibold text-zinc-300">{title}</h4>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full ${badge}`}>{title.split(' ')[0]}</span>
+        </div>
+        <div className="text-center py-6">
+          <p className="text-xs text-zinc-600">Disabled in settings</p>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card className="flex-1">
       <div className="flex items-center justify-between mb-4">
@@ -75,6 +94,11 @@ function ModelResultCard({
           <div className="text-2xl text-zinc-600 mb-2">?</div>
           <p className="text-xs text-zinc-500">No hand detected</p>
         </div>
+      ) : notLoaded ? (
+        <div className="text-center py-6">
+          <div className="text-2xl text-zinc-700 mb-2">--</div>
+          <p className="text-xs text-zinc-600">Model not loaded</p>
+        </div>
       ) : (
         <div className="text-center py-6">
           <div className="text-2xl text-zinc-700 mb-2">--</div>
@@ -86,6 +110,8 @@ function ModelResultCard({
 }
 
 export default function PredictionDisplay({ result, loading }: PredictionDisplayProps) {
+  const { enableResnet, enableLandmark, resnetLoaded, landmarkLoaded } = useAppStore();
+
   const match =
     result?.resnet && result?.landmark && result.resnet.label === result.landmark.label;
 
@@ -112,6 +138,8 @@ export default function PredictionDisplay({ result, loading }: PredictionDisplay
           prediction={result?.resnet}
           top3={result?.resnetTop3}
           color="#3b82f6"
+          disabled={!enableResnet}
+          notLoaded={enableResnet && !resnetLoaded}
         />
         <ModelResultCard
           title="Landmark NN"
@@ -120,6 +148,8 @@ export default function PredictionDisplay({ result, loading }: PredictionDisplay
           top3={result?.landmarkTop3}
           color="#10b981"
           noHand={result !== null && !result.landmark && result.handDetection === null}
+          disabled={!enableLandmark}
+          notLoaded={enableLandmark && !landmarkLoaded}
         />
       </div>
 

@@ -11,7 +11,7 @@ const MODELS = [
     badge: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
     architecture: [
       { label: 'Input', detail: '96x96 RGB image' },
-      { label: 'Backbone', detail: 'ResNet50 (ImageNet)' },
+      { label: 'Backbone', detail: 'ResNet50 (ImageNet pretrained)' },
       { label: 'Pooling', detail: 'GlobalAveragePooling2D' },
       { label: 'Dropout', detail: '0.2' },
       { label: 'Dense', detail: '128 units, ReLU' },
@@ -20,20 +20,23 @@ const MODELS = [
     ],
     stats: {
       parameters: '~23.6M',
-      modelSize: '208 MB (22 MB quantized)',
-      trainingTime: '~4 hours',
-      valAccuracy: '47.24%',
-      testAccuracy: '71.43%',
+      modelSize: '208 MB (23 MB quantized)',
+      trainingTime: '~4 hours (20 epochs)',
+      bestValAccuracy: '48.06% (Phase 2)',
+      testAccuracy: '67.9% (19/28)',
     },
     strengths: [
-      'Works directly on raw images',
-      'No preprocessing pipeline required',
+      'Works directly on raw pixels',
+      'No hand detection step required',
       'Leverages ImageNet knowledge',
+      'Always produces a prediction',
     ],
     weaknesses: [
-      'Large model size',
-      'Slower inference',
-      'Lower validation accuracy',
+      'Large model, slower inference',
+      'Low validation accuracy (~48%)',
+      'Sensitive to background/lighting',
+      'uint8 quantization degrades accuracy',
+      'Undertrained (limited to 20 epochs)',
     ],
   },
   {
@@ -41,7 +44,7 @@ const MODELS = [
     color: 'emerald',
     badge: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
     architecture: [
-      { label: 'Input', detail: '63 features (21x3)' },
+      { label: 'Input', detail: '63 features (21x3 coords)' },
       { label: 'Dense', detail: '128 units, ReLU' },
       { label: 'Dropout', detail: '0.3' },
       { label: 'Dense', detail: '64 units, ReLU' },
@@ -51,20 +54,21 @@ const MODELS = [
     stats: {
       parameters: '~18K',
       modelSize: '~244 KB',
-      trainingTime: '~10 min',
-      valAccuracy: '98.88%',
-      testAccuracy: '71.43%',
+      trainingTime: '~10 min (29 epochs)',
+      bestValAccuracy: '98.97%',
+      testAccuracy: '98.88% (when hand detected)',
     },
     strengths: [
-      '100% accuracy when hand detected',
-      'Extremely lightweight',
-      'Fast inference',
-      'Invariant to lighting/background',
+      'Near-perfect classification accuracy',
+      'Extremely lightweight (244 KB)',
+      'Instant inference (<1ms)',
+      'Invariant to lighting & background',
     ],
     weaknesses: [
-      'Depends on MediaPipe detection',
-      'Fails if no hand detected',
-      'Limited to static poses',
+      'Requires MediaPipe hand detection',
+      'Fails silently if no hand detected',
+      'Cannot classify without landmarks',
+      'Test accuracy drops to ~54% due to detection failures',
     ],
   },
 ];
@@ -172,11 +176,12 @@ export default function ModelComparison() {
           <div>
             <h4 className="text-sm font-semibold text-white mb-1">Key Finding</h4>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              The Landmark NN achieves <span className="text-emerald-400 font-semibold">100% accuracy when MediaPipe successfully detects a hand</span>.
-              The real bottleneck is MediaPipe&apos;s hand detection, not the classification model.
-              With detection confidence tuned to 0.1, both models achieve equal{' '}
-              <span className="text-white font-semibold">71.43% test accuracy</span> on the
-              28-image test set (missing the &quot;del&quot; class).
+              The Landmark NN achieves <span className="text-emerald-400 font-semibold">98.88% accuracy on the landmark feature test set</span> (12,724 samples) &mdash;
+              near-perfect classification when MediaPipe successfully detects a hand.
+              On the 28-image photo test set, it drops to ~54% due to MediaPipe detection failures, not classification errors.
+              ResNet50 achieves <span className="text-white font-semibold">67.9% test accuracy</span> (19/28) on the same photos,
+              with a best validation accuracy of only 48% (limited by 20 training epochs and 96&times;96 resolution).
+              The real bottleneck for Landmark NN is hand detection; for ResNet50, it&apos;s insufficient training.
             </p>
           </div>
         </div>

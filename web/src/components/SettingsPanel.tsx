@@ -69,8 +69,8 @@ export default function SettingsPanel() {
                     <label className="flex items-center justify-between cursor-pointer">
                       <div>
                         <span className="text-sm text-white">ResNet50</span>
-                        <p className="text-[10px] text-zinc-500">
-                          {resnetLoaded ? 'Loaded' : 'Not loaded'}
+                        <p className={`text-[10px] ${resnetLoaded ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                          {resnetLoaded ? 'Loaded (~23 MB)' : 'Loading...'}
                         </p>
                       </div>
                       <input
@@ -83,8 +83,8 @@ export default function SettingsPanel() {
                     <label className="flex items-center justify-between cursor-pointer">
                       <div>
                         <span className="text-sm text-white">Landmark NN</span>
-                        <p className="text-[10px] text-zinc-500">
-                          {landmarkLoaded ? 'Loaded' : 'Not loaded'}
+                        <p className={`text-[10px] ${landmarkLoaded ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                          {landmarkLoaded ? 'Loaded (~73 KB)' : 'Loading...'}
                         </p>
                       </div>
                       <input

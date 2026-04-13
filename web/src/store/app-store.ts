@@ -33,7 +33,7 @@ export const useAppStore = create<AppState>((set) => ({
   resnetProgress: 0,
   loadingModel: null,
 
-  detectionConfidence: 0.5,
+  detectionConfidence: 0.3,
   enableResnet: true,
   enableLandmark: true,
   darkMode: true,

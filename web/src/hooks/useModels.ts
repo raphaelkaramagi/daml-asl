@@ -20,23 +20,34 @@ export function useModels() {
     try {
       store.setLoadingModel('preprocessing');
       await loadPreprocessing();
+    } catch (err) {
+      console.error('Failed to load preprocessing:', err);
+    }
 
+    try {
       store.setLoadingModel('mediapipe');
       await initHandLandmarker(store.detectionConfidence);
+    } catch (err) {
+      console.error('Failed to init MediaPipe:', err);
+    }
 
+    try {
       store.setLoadingModel('landmark');
       await loadLandmarkModel((p) => store.setLandmarkProgress(p));
       store.setLandmarkLoaded(true);
+    } catch (err) {
+      console.error('Failed to load landmark model:', err);
+    }
 
+    try {
       store.setLoadingModel('resnet');
       await loadResnetModel((p) => store.setResnetProgress(p));
       store.setResnetLoaded(true);
-
-      store.setLoadingModel(null);
     } catch (err) {
-      console.error('Model loading error:', err);
-      store.setLoadingModel(null);
+      console.error('Failed to load resnet model:', err);
     }
+
+    store.setLoadingModel(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

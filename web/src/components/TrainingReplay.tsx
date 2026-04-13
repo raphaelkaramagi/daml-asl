@@ -126,7 +126,7 @@ export default function TrainingReplay() {
       </div>
 
       <Card className="mb-4">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="text-sm font-semibold text-white">{currentPhase?.label}</h3>
             <p className="text-xs text-zinc-500">{currentPhase?.description}</p>
@@ -135,9 +135,88 @@ export default function TrainingReplay() {
             {currentPhase?.optimizer}
           </span>
         </div>
+
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => {
+              if (visibleEpochs >= maxEpochs) setVisibleEpochs(0);
+              setPlaying(!playing);
+            }}
+            className="w-10 h-10 shrink-0 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition-colors"
+          >
+            {playing ? (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                <rect x="2" y="1" width="3.5" height="12" rx="1" />
+                <rect x="8.5" y="1" width="3.5" height="12" rx="1" />
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                <path d="M3 1.5v11l9-5.5z" />
+              </svg>
+            )}
+          </button>
+
+          <div className="flex-1">
+            <input
+              type="range"
+              min={0}
+              max={maxEpochs}
+              value={visibleEpochs}
+              onChange={(e) => {
+                setVisibleEpochs(Number(e.target.value));
+                setPlaying(false);
+              }}
+              className="w-full accent-blue-500"
+            />
+          </div>
+
+          <span className="text-xs text-zinc-400 font-mono w-20 text-right">
+            Epoch {visibleEpochs}/{maxEpochs}
+          </span>
+
+          <div className="flex gap-1">
+            {[1, 2, 4].map((s) => (
+              <button
+                key={s}
+                onClick={() => setSpeed(s)}
+                className={`px-2 py-1 rounded text-[10px] font-mono ${
+                  speed === s
+                    ? 'bg-zinc-700 text-white'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                {s}x
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {visibleEpochs > 0 && displayData.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="mt-3 grid grid-cols-4 gap-3"
+          >
+            {[
+              { label: 'Train Acc', value: displayData[displayData.length - 1].accuracy, fmt: 'pct' },
+              { label: 'Val Acc', value: displayData[displayData.length - 1].val_accuracy, fmt: 'pct' },
+              { label: 'Train Loss', value: displayData[displayData.length - 1].loss, fmt: 'num' },
+              { label: 'Val Loss', value: displayData[displayData.length - 1].val_loss, fmt: 'num' },
+            ].map((m) => (
+              <div key={m.label} className="text-center">
+                <div className="text-lg font-bold text-white font-mono">
+                  {m.fmt === 'pct'
+                    ? `${(m.value * 100).toFixed(1)}%`
+                    : m.value.toFixed(4)}
+                </div>
+                <div className="text-[10px] text-zinc-500">{m.label}</div>
+              </div>
+            ))}
+          </motion.div>
+        )}
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <p className="text-xs text-zinc-500 mb-3 uppercase tracking-wider">
             Accuracy
@@ -248,87 +327,6 @@ export default function TrainingReplay() {
           </div>
         </Card>
       </div>
-
-      <Card>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => {
-              if (visibleEpochs >= maxEpochs) setVisibleEpochs(0);
-              setPlaying(!playing);
-            }}
-            className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center transition-colors"
-          >
-            {playing ? (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-                <rect x="2" y="1" width="3.5" height="12" rx="1" />
-                <rect x="8.5" y="1" width="3.5" height="12" rx="1" />
-              </svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-                <path d="M3 1.5v11l9-5.5z" />
-              </svg>
-            )}
-          </button>
-
-          <div className="flex-1">
-            <input
-              type="range"
-              min={0}
-              max={maxEpochs}
-              value={visibleEpochs}
-              onChange={(e) => {
-                setVisibleEpochs(Number(e.target.value));
-                setPlaying(false);
-              }}
-              className="w-full accent-blue-500"
-            />
-          </div>
-
-          <span className="text-xs text-zinc-400 font-mono w-20 text-right">
-            Epoch {visibleEpochs}/{maxEpochs}
-          </span>
-
-          <div className="flex gap-1">
-            {[1, 2, 4].map((s) => (
-              <button
-                key={s}
-                onClick={() => setSpeed(s)}
-                className={`px-2 py-1 rounded text-[10px] font-mono ${
-                  speed === s
-                    ? 'bg-zinc-700 text-white'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                {s}x
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {visibleEpochs > 0 && displayData.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="mt-4 grid grid-cols-4 gap-3"
-          >
-            {[
-              { label: 'Train Acc', value: displayData[displayData.length - 1].accuracy, fmt: 'pct' },
-              { label: 'Val Acc', value: displayData[displayData.length - 1].val_accuracy, fmt: 'pct' },
-              { label: 'Train Loss', value: displayData[displayData.length - 1].loss, fmt: 'num' },
-              { label: 'Val Loss', value: displayData[displayData.length - 1].val_loss, fmt: 'num' },
-            ].map((m) => (
-              <div key={m.label} className="text-center">
-                <div className="text-lg font-bold text-white font-mono">
-                  {m.fmt === 'pct'
-                    ? `${(m.value * 100).toFixed(1)}%`
-                    : m.value.toFixed(4)}
-                </div>
-                <div className="text-[10px] text-zinc-500">{m.label}</div>
-              </div>
-            ))}
-          </motion.div>
-        )}
-      </Card>
     </Section>
   );
 }

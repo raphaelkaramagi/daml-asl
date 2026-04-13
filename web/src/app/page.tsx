@@ -110,7 +110,7 @@ export default function Home() {
             Dataset
           </a>
           <a
-            href="https://github.com"
+            href="https://github.com/raphaelkaramagi/daml-asl"
             target="_blank"
             rel="noopener noreferrer"
             className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors"

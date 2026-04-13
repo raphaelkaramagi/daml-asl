@@ -53,7 +53,7 @@ export function generateSyntheticData(
 
   return {
     xs: tf.tensor2d(shuffledData),
-    ys: tf.tensor1d(shuffledLabels, 'int32'),
+    ys: tf.tensor1d(shuffledLabels, 'float32'),
   };
 }
 
