@@ -55,7 +55,7 @@ export default function TrainingReplay() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/training-data.json`)
+    fetch('/training-data.json')
       .then((r) => r.json())
       .then(setData);
   }, []);

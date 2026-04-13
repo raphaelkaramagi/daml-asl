@@ -5,8 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Section from './ui/Section';
 import Card from './ui/Card';
 import { CLASS_NAMES } from '@/lib/constants';
-
-const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
 import { usePrediction } from '@/hooks/usePrediction';
 import PredictionDisplay from './PredictionDisplay';
 
@@ -18,7 +16,7 @@ export default function SampleGallery() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    fetch(`${BASE}/samples/manifest.json`)
+    fetch('/samples/manifest.json')
       .then((r) => r.json())
       .then(setManifest)
       .catch(() => {});
@@ -44,7 +42,7 @@ export default function SampleGallery() {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => predict(img);
-      img.src = `${BASE}/samples/${filename}`;
+      img.src = `/samples/${filename}`;
     },
     [predict]
   );
@@ -118,7 +116,7 @@ export default function SampleGallery() {
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={`${BASE}/samples/${filename}`}
+                        src={`/samples/${filename}`}
                         alt={filename}
                         className="w-full h-full object-cover"
                       />
