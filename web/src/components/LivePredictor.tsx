@@ -35,7 +35,7 @@ export default function LivePredictor() {
     <Section
       id="predictor"
       title="Live Prediction"
-      subtitle="Upload an image or use your webcam to classify ASL hand signs with both models simultaneously."
+      subtitle="Upload an image or use your webcam. ResNet50 is recommended for best accuracy."
     >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
@@ -118,18 +118,18 @@ export default function LivePredictor() {
         {[
           {
             title: 'ResNet50',
-            desc: 'Analyzes raw 96x96 pixel images',
-            detail: 'Transfer learning from ImageNet',
+            desc: 'Primary model — 96.4% end-to-end',
+            detail: 'Hand-cropped 96×96 pixels, always predicts',
           },
           {
             title: 'MediaPipe',
             desc: '21 hand landmarks detected',
-            detail: '63 features (x, y, z per landmark)',
+            detail: 'Multi-scale IMAGE detection (1×, 1.5×, 2×)',
           },
           {
             title: 'Landmark NN',
-            desc: 'Classifies hand geometry',
-            detail: 'Dense 128 → 64 → 29 network',
+            desc: 'Lightweight geometry classifier',
+            detail: '100% when hand detected; needs MediaPipe first',
           },
         ].map((item) => (
           <Card key={item.title}>

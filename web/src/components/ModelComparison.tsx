@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import Section from './ui/Section';
 import Card from './ui/Card';
+import EvaluationSummary from './EvaluationSummary';
 
 const MODELS = [
   {
@@ -21,22 +22,20 @@ const MODELS = [
     stats: {
       parameters: '~23.6M',
       modelSize: '208 MB (23 MB quantized)',
-      trainingTime: '~4 hours (20 epochs)',
-      bestValAccuracy: '48.06% (Phase 2)',
-      testAccuracy: '67.9% (19/28)',
+      trainingTime: '~4 hours (hand-cropped, Metal GPU)',
+      bestValAccuracy: 'See docs/RESULTS.md',
+      testAccuracy: '96.4% (27/28)',
+      detectionRate: '67.9% (shared MediaPipe)',
     },
     strengths: [
-      'Works directly on raw pixels',
-      'No hand detection step required',
-      'Leverages ImageNet knowledge',
+      'Best end-to-end accuracy (96.4%)',
       'Always produces a prediction',
+      'Hand-crop at inference when landmarks found',
+      'Recommended for live demo',
     ],
     weaknesses: [
-      'Large model, slower inference',
-      'Low validation accuracy (~48%)',
-      'Sensitive to background/lighting',
-      'uint8 quantization degrades accuracy',
-      'Undertrained (limited to 20 epochs)',
+      'Large model (~23 MB quantized)',
+      'Slower inference than Landmark NN',
     ],
   },
   {
@@ -54,21 +53,21 @@ const MODELS = [
     stats: {
       parameters: '~18K',
       modelSize: '~244 KB',
-      trainingTime: '~10 min (29 epochs)',
-      bestValAccuracy: '98.97%',
-      testAccuracy: '98.88% (when hand detected)',
+      trainingTime: '~2 min (re-extracted features)',
+      bestValAccuracy: '95.7%',
+      testAccuracy: '100% given detection',
+      detectionRate: '67.9% end-to-end on 28 photos',
     },
     strengths: [
-      'Near-perfect classification accuracy',
-      'Extremely lightweight (244 KB)',
+      '100% accuracy when hand is detected',
+      'Extremely lightweight (~244 KB)',
       'Instant inference (<1ms)',
-      'Invariant to lighting & background',
+      'Same multi-scale detection as training pipeline',
     ],
     weaknesses: [
-      'Requires MediaPipe hand detection',
-      'Fails silently if no hand detected',
+      'Requires MediaPipe hand detection first',
+      'End-to-end capped at 67.9% by detection rate',
       'Cannot classify without landmarks',
-      'Test accuracy drops to ~54% due to detection failures',
     ],
   },
 ];
@@ -78,9 +77,10 @@ export default function ModelComparison() {
     <Section
       id="comparison"
       title="Model Comparison"
-      subtitle="Two fundamentally different approaches to the same problem. Pixels vs. geometry."
+      subtitle="ResNet50 for best end-to-end accuracy; Landmark NN for lightweight geometry-based classification."
       dark
     >
+      <EvaluationSummary />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {MODELS.map((model, idx) => (
           <motion.div
@@ -176,12 +176,13 @@ export default function ModelComparison() {
           <div>
             <h4 className="text-sm font-semibold text-white mb-1">Key Finding</h4>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              The Landmark NN achieves <span className="text-emerald-400 font-semibold">98.88% accuracy on the landmark feature test set</span> (12,724 samples) &mdash;
-              near-perfect classification when MediaPipe successfully detects a hand.
-              On the 28-image photo test set, it drops to ~54% due to MediaPipe detection failures, not classification errors.
-              ResNet50 achieves <span className="text-white font-semibold">67.9% test accuracy</span> (19/28) on the same photos,
-              with a best validation accuracy of only 48% (limited by 20 training epochs and 96&times;96 resolution).
-              The real bottleneck for Landmark NN is hand detection; for ResNet50, it&apos;s insufficient training.
+              <span className="text-blue-400 font-semibold">ResNet50</span> is the primary model
+              for live demo — 96.4% end-to-end on the 28-photo test set, always predicting from
+              hand-cropped pixels.{' '}
+              <span className="text-emerald-400 font-semibold">Landmark NN</span> classifies
+              wrist-relative geometry with 100% accuracy when MediaPipe detects a hand, but
+              end-to-end accuracy is limited to 67.9% by the shared detection rate. Both models
+              now use the same IMAGE-mode multi-scale MediaPipe pipeline in the browser.
             </p>
           </div>
         </div>

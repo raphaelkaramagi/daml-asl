@@ -9,10 +9,11 @@ Usage:
 """
 
 import os
+import shutil
 import sys
+import tempfile
 import json
 import subprocess
-import numpy as np
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB_MODELS_DIR = os.path.join(PROJECT_ROOT, "web", "public", "models")
@@ -21,35 +22,57 @@ LANDMARK_MODEL = os.path.join(PROJECT_ROOT, "data", "nn_landmark_model.keras")
 RESNET_MODEL = os.path.join(PROJECT_ROOT, "models", "best_asl_resnet50_phase2.h5")
 LABEL_ENCODER = os.path.join(PROJECT_ROOT, "data", "label_encoder.joblib")
 SCALER = os.path.join(PROJECT_ROOT, "data", "scaler.joblib")
+RESNET_GRAPH_OUT = os.path.join(WEB_MODELS_DIR, "resnet-graph")
 
 
 def convert_landmark_model():
     """Convert the lightweight landmark NN to TF.js layers format."""
-    out_dir = os.path.join(WEB_MODELS_DIR, "landmark-nn")
-    os.makedirs(out_dir, exist_ok=True)
-
+    script = os.path.join(PROJECT_ROOT, "scripts", "export_landmark_tfjs.py")
     print(f"Converting landmark model: {LANDMARK_MODEL}")
-    subprocess.run([
-        sys.executable, "-m", "tensorflowjs.converters.keras_h5_to_tfjs",
-        LANDMARK_MODEL, out_dir
-    ], check=True)
-    print(f"  -> Saved to {out_dir}")
+    subprocess.run([sys.executable, script], check=True)
+    print(f"  -> Saved to {os.path.join(WEB_MODELS_DIR, 'landmark-nn')}")
 
 
 def convert_resnet_model():
-    """Convert ResNet50 to TF.js with uint8 quantization."""
-    out_dir = os.path.join(WEB_MODELS_DIR, "resnet")
-    os.makedirs(out_dir, exist_ok=True)
+    """Convert ResNet50 to TF.js graph model with uint8 quantization."""
+    import tensorflow as tf
+
+    if not os.path.exists(RESNET_MODEL):
+        raise FileNotFoundError(f"ResNet model not found: {RESNET_MODEL}")
 
     print(f"Converting ResNet model: {RESNET_MODEL}")
-    subprocess.run([
-        sys.executable, "-m", "tensorflowjs.converters.converter",
-        "--input_format=keras",
-        "--output_format=tfjs_layers_model",
-        "--quantize_uint8",
-        RESNET_MODEL, out_dir
-    ], check=True)
-    print(f"  -> Saved to {out_dir}")
+    model = tf.keras.models.load_model(RESNET_MODEL, compile=False)
+
+    if os.path.exists(RESNET_GRAPH_OUT):
+        shutil.rmtree(RESNET_GRAPH_OUT)
+    os.makedirs(RESNET_GRAPH_OUT, exist_ok=True)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        saved_model_dir = os.path.join(tmp, "saved_model")
+        tf.saved_model.save(model, saved_model_dir)
+
+        try:
+            from tensorflowjs.converters import tf_saved_model_conversion_v2 as converter
+            converter.convert_tf_saved_model(
+                saved_model_dir,
+                RESNET_GRAPH_OUT,
+                quantization_dtype="uint8",
+            )
+            print(f"  -> Saved graph model to {RESNET_GRAPH_OUT}")
+            return
+        except Exception as exc:
+            print(f"  Graph conversion via Python API failed: {exc}")
+            print("  Falling back to tensorflowjs_converter CLI...")
+
+        subprocess.run([
+            sys.executable, "-m", "tensorflowjs.converters.converter",
+            "--input_format=tf_saved_model",
+            "--output_format=tfjs_graph_model",
+            "--quantize_uint8",
+            "--saved_model_tags=serve",
+            saved_model_dir, RESNET_GRAPH_OUT,
+        ], check=True)
+        print(f"  -> Saved graph model to {RESNET_GRAPH_OUT}")
 
 
 def export_preprocessing():
@@ -76,9 +99,19 @@ def export_preprocessing():
 
 
 def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Convert models to TF.js for web deployment")
+    parser.add_argument(
+        "--landmark-only",
+        action="store_true",
+        help="Export landmark NN and preprocessing only (skip ResNet conversion)",
+    )
+    args = parser.parse_args()
+
     if not os.path.exists(LANDMARK_MODEL):
         print(f"ERROR: Landmark model not found at {LANDMARK_MODEL}")
-        print("Train the model first using notebook 06.")
+        print("Train the model first: python scripts/train_landmark_nn.py")
         sys.exit(1)
 
     export_preprocessing()
@@ -88,6 +121,11 @@ def main():
     except Exception as e:
         print(f"  Landmark conversion failed: {e}")
         print("  Install tensorflowjs: pip install tensorflowjs")
+        sys.exit(1)
+
+    if args.landmark_only:
+        print("\nLandmark-only export complete.")
+        return
 
     if os.path.exists(RESNET_MODEL):
         try:

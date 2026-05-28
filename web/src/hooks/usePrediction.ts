@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   predictWithLandmarkNN,
   predictWithResnet,
@@ -10,16 +10,23 @@ import {
   isResnetModelLoaded,
   type Prediction,
 } from '@/lib/models';
-import { detectHandFromImage, type HandDetectionResult } from '@/lib/landmarks';
-import { CLASS_NAMES } from '@/lib/constants';
+import { detectHandFromImage, resetTemporalHold } from '@/lib/landmarks';
+import {
+  canvasToResnetImageData,
+  drawSourceToCanvas,
+  getPaddedBBox,
+  SMALL_HAND_AREA_THRESHOLD,
+} from '@/lib/image-utils';
 import { useAppStore } from '@/store/app-store';
 
 export interface PredictionResult {
   resnet?: Prediction;
   landmark?: Prediction;
-  handDetection: HandDetectionResult | null;
+  handDetection: import('@/lib/landmarks').HandDetectionResult | null;
   resnetTop3?: { label: string; confidence: number }[];
   landmarkTop3?: { label: string; confidence: number }[];
+  handTooSmall?: boolean;
+  detectionHeld?: boolean;
 }
 
 export function usePrediction() {
@@ -35,44 +42,36 @@ export function usePrediction() {
         const resnetReady = isResnetModelLoaded();
         const landmarkReady = isLandmarkModelLoaded();
 
-        const srcW = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
-        const srcH = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
+        resetTemporalHold();
+        const handResult = detectHandFromImage(source);
+        const canvas = drawSourceToCanvas(source);
 
-        // Upscale small images before MediaPipe detection for better reliability
-        let detectionSource: HTMLImageElement | HTMLCanvasElement = source;
-        const MIN_DIM = 300;
-        if (srcW < MIN_DIM || srcH < MIN_DIM) {
-          const scale = Math.max(MIN_DIM / srcW, MIN_DIM / srcH, 1);
-          const upCanvas = document.createElement('canvas');
-          upCanvas.width = Math.round(srcW * scale);
-          upCanvas.height = Math.round(srcH * scale);
-          const upCtx = upCanvas.getContext('2d')!;
-          upCtx.drawImage(source, 0, 0, upCanvas.width, upCanvas.height);
-          detectionSource = upCanvas;
+        let handTooSmall = false;
+        if (handResult?.landmarks) {
+          const bbox = getPaddedBBox(handResult.landmarks);
+          handTooSmall = bbox.area < SMALL_HAND_AREA_THRESHOLD;
         }
-
-        const handResult = detectHandFromImage(detectionSource);
 
         let resnetPred: Prediction | undefined;
         let landmarkPred: Prediction | undefined;
         let resnetTop3: { label: string; confidence: number }[] | undefined;
         let landmarkTop3: { label: string; confidence: number }[] | undefined;
 
+        const preprocessing = await loadPreprocessing();
+        const classes = preprocessing.classes;
+
         if (enableResnet && resnetReady) {
-          const canvas = document.createElement('canvas');
-          canvas.width = srcW;
-          canvas.height = srcH;
-          const ctx = canvas.getContext('2d')!;
-          ctx.drawImage(source, 0, 0);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const imageData = canvasToResnetImageData(
+            canvas,
+            handResult?.landmarks
+          );
           resnetPred = predictWithResnet(imageData);
-          resnetTop3 = getTopPredictions(resnetPred.allConfidences, [...CLASS_NAMES]);
+          resnetTop3 = getTopPredictions(resnetPred.allConfidences, classes);
         }
 
         if (enableLandmark && landmarkReady && handResult) {
           landmarkPred = predictWithLandmarkNN(handResult.features);
-          const preprocessing = await loadPreprocessing();
-          landmarkTop3 = getTopPredictions(landmarkPred.allConfidences, preprocessing.classes);
+          landmarkTop3 = getTopPredictions(landmarkPred.allConfidences, classes);
         }
 
         setResult({
@@ -81,6 +80,8 @@ export function usePrediction() {
           handDetection: handResult,
           resnetTop3,
           landmarkTop3,
+          handTooSmall,
+          detectionHeld: handResult?.held,
         });
       } catch (err) {
         console.error('Prediction error:', err);

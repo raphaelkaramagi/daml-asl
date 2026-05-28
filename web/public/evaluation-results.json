@@ -1,0 +1,333 @@
+{
+  "testImages": 28,
+  "detectionConfidence": 0.2,
+  "detectionRate": 67.86,
+  "resnetEndToEnd": 96.43,
+  "resnetCorrect": 27,
+  "landmarkAccuracyGivenDetection": 100.0,
+  "landmarkEndToEnd": 67.86,
+  "landmarkCorrect": 19,
+  "noDetectionClasses": [
+    "A",
+    "C",
+    "D",
+    "E",
+    "N",
+    "V",
+    "X",
+    "Z",
+    "nothing"
+  ],
+  "resnetPredictions": [
+    {
+      "true": "A",
+      "pred": "A",
+      "correct": true
+    },
+    {
+      "true": "B",
+      "pred": "B",
+      "correct": true
+    },
+    {
+      "true": "C",
+      "pred": "C",
+      "correct": true
+    },
+    {
+      "true": "D",
+      "pred": "D",
+      "correct": true
+    },
+    {
+      "true": "E",
+      "pred": "E",
+      "correct": true
+    },
+    {
+      "true": "F",
+      "pred": "F",
+      "correct": true
+    },
+    {
+      "true": "G",
+      "pred": "G",
+      "correct": true
+    },
+    {
+      "true": "H",
+      "pred": "H",
+      "correct": true
+    },
+    {
+      "true": "I",
+      "pred": "I",
+      "correct": true
+    },
+    {
+      "true": "J",
+      "pred": "J",
+      "correct": true
+    },
+    {
+      "true": "K",
+      "pred": "K",
+      "correct": true
+    },
+    {
+      "true": "L",
+      "pred": "L",
+      "correct": true
+    },
+    {
+      "true": "M",
+      "pred": "M",
+      "correct": true
+    },
+    {
+      "true": "N",
+      "pred": "N",
+      "correct": true
+    },
+    {
+      "true": "O",
+      "pred": "O",
+      "correct": true
+    },
+    {
+      "true": "P",
+      "pred": "P",
+      "correct": true
+    },
+    {
+      "true": "Q",
+      "pred": "Q",
+      "correct": true
+    },
+    {
+      "true": "R",
+      "pred": "R",
+      "correct": true
+    },
+    {
+      "true": "S",
+      "pred": "S",
+      "correct": true
+    },
+    {
+      "true": "T",
+      "pred": "T",
+      "correct": true
+    },
+    {
+      "true": "U",
+      "pred": "U",
+      "correct": true
+    },
+    {
+      "true": "V",
+      "pred": "K",
+      "correct": false
+    },
+    {
+      "true": "W",
+      "pred": "W",
+      "correct": true
+    },
+    {
+      "true": "X",
+      "pred": "X",
+      "correct": true
+    },
+    {
+      "true": "Y",
+      "pred": "Y",
+      "correct": true
+    },
+    {
+      "true": "Z",
+      "pred": "Z",
+      "correct": true
+    },
+    {
+      "true": "nothing",
+      "pred": "nothing",
+      "correct": true
+    },
+    {
+      "true": "space",
+      "pred": "space",
+      "correct": true
+    }
+  ],
+  "landmarkPredictions": [
+    {
+      "true": "A",
+      "pred": "NO_DETECTION",
+      "detected": false,
+      "correct": false
+    },
+    {
+      "true": "B",
+      "pred": "B",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "C",
+      "pred": "NO_DETECTION",
+      "detected": false,
+      "correct": false
+    },
+    {
+      "true": "D",
+      "pred": "NO_DETECTION",
+      "detected": false,
+      "correct": false
+    },
+    {
+      "true": "E",
+      "pred": "NO_DETECTION",
+      "detected": false,
+      "correct": false
+    },
+    {
+      "true": "F",
+      "pred": "F",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "G",
+      "pred": "G",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "H",
+      "pred": "H",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "I",
+      "pred": "I",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "J",
+      "pred": "J",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "K",
+      "pred": "K",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "L",
+      "pred": "L",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "M",
+      "pred": "M",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "N",
+      "pred": "NO_DETECTION",
+      "detected": false,
+      "correct": false
+    },
+    {
+      "true": "O",
+      "pred": "O",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "P",
+      "pred": "P",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "Q",
+      "pred": "Q",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "R",
+      "pred": "R",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "S",
+      "pred": "S",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "T",
+      "pred": "T",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "U",
+      "pred": "U",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "V",
+      "pred": "NO_DETECTION",
+      "detected": false,
+      "correct": false
+    },
+    {
+      "true": "W",
+      "pred": "W",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "X",
+      "pred": "NO_DETECTION",
+      "detected": false,
+      "correct": false
+    },
+    {
+      "true": "Y",
+      "pred": "Y",
+      "detected": true,
+      "correct": true
+    },
+    {
+      "true": "Z",
+      "pred": "NO_DETECTION",
+      "detected": false,
+      "correct": false
+    },
+    {
+      "true": "nothing",
+      "pred": "NO_DETECTION",
+      "detected": false,
+      "correct": false
+    },
+    {
+      "true": "space",
+      "pred": "space",
+      "detected": true,
+      "correct": true
+    }
+  ]
+}

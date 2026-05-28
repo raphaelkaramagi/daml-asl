@@ -12,9 +12,7 @@ Interactive browser-based demo for the ASL Alphabet Recognition project. All ML 
 |---|---|
 | **Live Prediction** | Webcam feed with real-time MediaPipe hand skeleton overlay + ResNet50 and Landmark NN predictions side by side |
 | **Image Upload** | Drag-and-drop or click to upload any image for prediction |
-| **Training Replay** | Animated epoch-by-epoch charts replaying the real training metrics from both models |
-| **Micro Training** | Train a small neural network live in the browser with TF.js |
-| **Model Comparison** | Architecture, metrics, strengths and weaknesses for each approach |
+| **Model Comparison** | Evaluation banner, architecture, metrics, strengths and weaknesses for each approach |
 | **Sample Gallery** | Browse all 29 ASL classes, click any sample image to get predictions |
 | **Settings** | Toggle models on/off, adjust MediaPipe detection confidence |
 
@@ -36,23 +34,37 @@ npm run dev   # http://localhost:3000
 
 ## Preparing Models & Assets
 
-Before the first run (or after retraining), prepare the static assets from the **repo root**:
+Before the first run (or after retraining), prepare assets from the **repo root**:
 
 ```bash
-# 1. Convert trained Keras models to TF.js format
-#    Outputs: web/public/models/landmark-nn/ and web/public/models/resnet-graph/
-python scripts/convert_models.py
+conda activate daml-asl
 
-# 2. Resize and copy sample images for the gallery
-#    Outputs: web/public/samples/ + web/public/samples/manifest.json
-python scripts/prepare_samples.py
+# Optional: retrain with improved pipeline
+python scripts/reextract_landmarks.py      # improved landmark CSV
+# ... train landmark NN (notebook 06) ...
+python scripts/generate_hand_crops.py      # hand-cropped ResNet training set
+python scripts/train_resnet_improved.py    # 3-phase ResNet training (~4-8 hrs GPU)
 
-# 3. Export training metrics for the Training Replay section
-#    Output: web/public/training-data.json
-python scripts/extract_training_data.py
+# Convert and export for web
+python scripts/convert_models.py           # → web/public/models/resnet-graph/
+python scripts/evaluate_models.py          # → results/evaluation_results.json (+ web sync)
+python scripts/update_results_doc.py       # → docs/RESULTS.md
+python scripts/prepare_samples.py          # → web/public/samples/
 ```
 
-> These scripts require the Python environment from the main project (`conda activate daml-asl`).
+Landmark-only retrain (no ResNet work):
+
+```bash
+python scripts/run_landmark_pipeline.py
+```
+
+### Inference improvements (no retrain required)
+
+The web app uses shared detection logic mirrored from `scripts/mediapipe_detect.py`:
+- IMAGE-mode multi-scale detection retry (1×, 1.5×, 2× upscale) for webcam, upload, and gallery
+- Hand-crop before ResNet inference (when landmarks detected)
+- Configurable detection confidence (Settings panel)
+- Temporal hold on webcam; pauses when scrolled off-screen
 
 ### Model files (already committed)
 
@@ -73,9 +85,8 @@ The converted model files are committed to the repo under `web/public/models/`:
 | Next.js 16 (App Router, TypeScript) | Framework, static export |
 | Tailwind CSS | Styling |
 | Framer Motion | Animations |
-| TensorFlow.js | In-browser model inference and micro training |
+| TensorFlow.js | In-browser model inference |
 | MediaPipe Tasks Vision | Hand landmark detection |
-| Recharts | Training curve charts |
 | Zustand | Global state management |
 
 ---
@@ -95,8 +106,7 @@ web/src/
 │   ├── ImageUploader.tsx       # Drag-and-drop image input
 │   ├── LandmarkVisualizer.tsx  # Canvas-based hand skeleton renderer
 │   ├── PredictionDisplay.tsx   # Side-by-side model results + confidence bars
-│   ├── TrainingReplay.tsx      # Animated training charts with playback controls
-│   ├── MicroTraining.tsx       # In-browser TF.js training UI
+│   ├── EvaluationSummary.tsx   # Deployed model evaluation banner
 │   ├── ModelComparison.tsx     # Architecture cards and metrics
 │   ├── SampleGallery.tsx       # Class grid + image selector + predictions
 │   ├── SettingsPanel.tsx       # Slide-out settings drawer
@@ -107,8 +117,7 @@ web/src/
 │   └── useWebcam.ts     # Camera stream lifecycle
 ├── lib/
 │   ├── models.ts        # loadLandmarkModel, loadResnetModel, predict functions
-│   ├── landmarks.ts     # MediaPipe HandLandmarker init + detection
-│   ├── micro-trainer.ts # TF.js in-browser training logic
+│   ├── landmarks.ts     # MediaPipe HandLandmarker init + IMAGE-mode detection
 │   └── constants.ts     # CLASS_NAMES, MODEL_PATHS, HAND_CONNECTIONS
 └── store/
     └── app-store.ts     # Zustand store (model loaded state, settings)

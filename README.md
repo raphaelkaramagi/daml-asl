@@ -15,14 +15,14 @@ Two fundamentally different approaches are compared side by side:
 
 ## Results
 
+See **[docs/RESULTS.md](docs/RESULTS.md)** for the latest training metrics.
+
 | Model | Val Accuracy | Test Accuracy | Model Size | Training Time |
 |---|---|---|---|---|
-| **ResNet50** (Phase 2 fine-tuning) | 48.06% | 67.9% (19/28) | 208 MB (23 MB quantized) | ~4 hours |
-| **Landmark NN** | 98.97% | 98.88%* | ~244 KB | ~10 min |
+| **ResNet50** (hand-cropped retrain) | — | **96.4%** (27/28) | 208 MB (23 MB quantized) | ~4 hours |
+| **Landmark NN** | 95.27% | 95.27% (split) | ~244 KB | ~2 min |
 
-> \* On the 12,724-sample landmark feature test split. On the 28-photo test set, Landmark NN drops to ~54% due to MediaPipe detection failures — not classification errors.
-
-**Key finding:** The Landmark NN classifier is near-perfect when MediaPipe detects a hand. The bottleneck is detection, not classification. ResNet50's lower accuracy is primarily due to limited training (20 epochs) and small input resolution (96×96).
+> On the 28-photo test set, end-to-end accuracy depends on MediaPipe detection rate. Run `python scripts/evaluate_models.py` after retraining for fair comparison.
 
 ---
 
@@ -47,15 +47,33 @@ See [SETUP.md](SETUP.md) for full setup instructions including Apple Silicon, Wi
 
 ## Training Pipeline
 
-Run notebooks in order:
+Run notebooks in order, or use the improved scripts (recommended):
 
-| Step | Notebook | Output | Time |
+```bash
+# 1. Re-extract landmarks with shared detection (multi-scale retry)
+python scripts/reextract_landmarks.py
+
+# 2. Train Landmark NN (notebook 06) on new CSV
+
+# 3. Generate hand crops for ResNet
+python scripts/generate_hand_crops.py
+
+# 4. Train improved ResNet50 (3-phase, no horizontal flip, adapted stem)
+python scripts/train_resnet_improved.py
+
+# 5. Convert models for web + evaluate
+python scripts/convert_models.py
+python scripts/evaluate_models.py
+python scripts/extract_training_data.py
+```
+
+| Step | Notebook / Script | Output | Time |
 |---|---|---|---|
-| 1 | `01-data-preprocessing.ipynb` | Data exploration & visualisation | ~2 min |
-| 2 | `03-mediapipe-feature-extraction.ipynb` | `data/asl_landmarks_train.csv` | ~30 min |
-| 3 | `05-training-approach-1.ipynb` | `models/best_asl_resnet50_phase2.h5` | ~4 hours |
-| 4 | `06-training-approach-2-landmarks.ipynb` | `data/nn_landmark_model.keras` | ~10 min |
-| 5 | `07-model-comparison-evaluation.ipynb` | Evaluation results & comparison | ~2 min |
+| 1 | `03-mediapipe-feature-extraction.ipynb` or `scripts/reextract_landmarks.py` | `data/asl_landmarks_train.csv` | ~30 min |
+| 2 | `06-training-approach-2-landmarks.ipynb` | `data/nn_landmark_model.keras` | ~10 min |
+| 3 | `scripts/generate_hand_crops.py` | `data/asl_hand_crops/` | ~1 hr |
+| 4 | `05-training-approach-1.ipynb` or `scripts/train_resnet_improved.py` | `models/best_asl_resnet50_phase2.h5` | ~4–8 hrs GPU |
+| 5 | `07-model-comparison-evaluation.ipynb` or `scripts/evaluate_models.py` | Evaluation metrics | ~2 min |
 
 ```bash
 conda activate daml-asl
@@ -122,8 +140,13 @@ daml-asl/
 │   ├── label_encoder.joblib         # LabelEncoder for class names
 │   └── scaler.joblib                # StandardScaler for landmark features
 │
-├── scripts/                         # Web asset preparation (run from repo root)
-│   ├── convert_models.py            # Convert Keras → TF.js format
+├── scripts/                         # Training, detection, and web asset prep
+│   ├── mediapipe_detect.py          # Shared hand detection (training + inference parity)
+│   ├── reextract_landmarks.py       # Re-extract landmark CSV with improved detection
+│   ├── generate_hand_crops.py       # Hand-cropped images for ResNet training
+│   ├── train_resnet_improved.py     # Improved 3-phase ResNet50 training
+│   ├── evaluate_models.py           # Fair evaluation on 28-photo test set
+│   ├── convert_models.py            # Convert Keras → TF.js graph model
 │   ├── prepare_samples.py           # Resize sample images for web gallery
 │   └── extract_training_data.py     # Export training metrics → JSON
 │
@@ -138,7 +161,7 @@ daml-asl/
         ├── app/                     # Next.js App Router (layout, page, globals)
         ├── components/              # UI components
         ├── hooks/                   # useModels, usePrediction, useWebcam
-        ├── lib/                     # models.ts, landmarks.ts, constants.ts
+        ├── lib/                     # models.ts, landmarks.ts, image-utils.ts, constants.ts
         └── store/                   # Zustand global state
 ```
 

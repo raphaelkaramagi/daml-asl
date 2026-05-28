@@ -7,15 +7,11 @@ import Hero from '@/components/Hero';
 import SettingsPanel from '@/components/SettingsPanel';
 
 const LivePredictor = dynamic(() => import('@/components/LivePredictor'), { ssr: false });
-const TrainingReplay = dynamic(() => import('@/components/TrainingReplay'), { ssr: false });
-const MicroTraining = dynamic(() => import('@/components/MicroTraining'), { ssr: false });
 const ModelComparison = dynamic(() => import('@/components/ModelComparison'), { ssr: false });
 const SampleGallery = dynamic(() => import('@/components/SampleGallery'), { ssr: false });
 
 const NAV_LINKS = [
   { href: '#predictor', label: 'Predict' },
-  { href: '#training', label: 'Training' },
-  { href: '#micro-training', label: 'Micro Train' },
   { href: '#comparison', label: 'Compare' },
   { href: '#gallery', label: 'Gallery' },
 ];
@@ -87,8 +83,6 @@ export default function Home() {
       <div className="pt-14">
         <Hero />
         <LivePredictor />
-        <TrainingReplay />
-        <MicroTraining />
         <ModelComparison />
         <SampleGallery />
       </div>
