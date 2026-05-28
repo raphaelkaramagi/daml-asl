@@ -8,16 +8,11 @@ import {
   loadPreprocessing,
   resetResnetModel,
 } from '@/lib/models';
-import { initHandLandmarker, updateHandLandmarkerConfidence } from '@/lib/landmarks';
+import { initHandLandmarker } from '@/lib/landmarks';
 
 export function useModels() {
   const initialized = useRef(false);
   const store = useAppStore();
-  const detectionConfidence = useAppStore((s) => s.detectionConfidence);
-
-  useEffect(() => {
-    updateHandLandmarkerConfidence(detectionConfidence);
-  }, [detectionConfidence]);
 
   const retryResnet = useCallback(async () => {
     store.setResnetLoadError(null);
@@ -53,18 +48,18 @@ export function useModels() {
     }
 
     try {
+      store.setLoadingModel('mediapipe');
+      await initHandLandmarker(store.detectionConfidence);
+    } catch (err) {
+      console.error('Failed to init MediaPipe:', err);
+    }
+
+    try {
       store.setLoadingModel('landmark');
       await loadLandmarkModel((p) => store.setLandmarkProgress(p));
       store.setLandmarkLoaded(true);
     } catch (err) {
       console.error('Failed to load landmark model:', err);
-    }
-
-    try {
-      store.setLoadingModel('mediapipe');
-      await initHandLandmarker(store.detectionConfidence);
-    } catch (err) {
-      console.error('Failed to init MediaPipe:', err);
     }
 
     try {

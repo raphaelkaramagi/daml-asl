@@ -10,13 +10,8 @@ import {
   isResnetModelLoaded,
   type Prediction,
 } from '@/lib/models';
-import { detectHandFromImage, setRunningMode } from '@/lib/landmarks';
-import {
-  canvasToResnetImageData,
-  drawSourceToCanvas,
-  getPaddedBBox,
-  SMALL_HAND_AREA_THRESHOLD,
-} from '@/lib/image-utils';
+import { detectHandFromImage } from '@/lib/landmarks';
+import { CLASS_NAMES } from '@/lib/constants';
 import { useAppStore } from '@/store/app-store';
 
 export interface PredictionResult {
@@ -25,7 +20,6 @@ export interface PredictionResult {
   handDetection: import('@/lib/landmarks').HandDetectionResult | null;
   resnetTop3?: { label: string; confidence: number }[];
   landmarkTop3?: { label: string; confidence: number }[];
-  handTooSmall?: boolean;
 }
 
 export function usePrediction() {
@@ -41,36 +35,43 @@ export function usePrediction() {
         const resnetReady = isResnetModelLoaded();
         const landmarkReady = isLandmarkModelLoaded();
 
-        setRunningMode('IMAGE');
-        const handResult = detectHandFromImage(source);
-        const canvas = drawSourceToCanvas(source);
+        const srcW = source instanceof HTMLImageElement ? source.naturalWidth : source.width;
+        const srcH = source instanceof HTMLImageElement ? source.naturalHeight : source.height;
 
-        let handTooSmall = false;
-        if (handResult?.landmarks) {
-          const bbox = getPaddedBBox(handResult.landmarks);
-          handTooSmall = bbox.area < SMALL_HAND_AREA_THRESHOLD;
+        let detectionSource: HTMLImageElement | HTMLCanvasElement = source;
+        const MIN_DIM = 300;
+        if (srcW < MIN_DIM || srcH < MIN_DIM) {
+          const scale = Math.max(MIN_DIM / srcW, MIN_DIM / srcH, 1);
+          const upCanvas = document.createElement('canvas');
+          upCanvas.width = Math.round(srcW * scale);
+          upCanvas.height = Math.round(srcH * scale);
+          const upCtx = upCanvas.getContext('2d')!;
+          upCtx.drawImage(source, 0, 0, upCanvas.width, upCanvas.height);
+          detectionSource = upCanvas;
         }
+
+        const handResult = detectHandFromImage(detectionSource);
 
         let resnetPred: Prediction | undefined;
         let landmarkPred: Prediction | undefined;
         let resnetTop3: { label: string; confidence: number }[] | undefined;
         let landmarkTop3: { label: string; confidence: number }[] | undefined;
 
-        const preprocessing = await loadPreprocessing();
-        const classes = preprocessing.classes;
-
         if (enableResnet && resnetReady) {
-          const imageData = canvasToResnetImageData(
-            canvas,
-            handResult?.landmarks
-          );
+          const canvas = document.createElement('canvas');
+          canvas.width = srcW;
+          canvas.height = srcH;
+          const ctx = canvas.getContext('2d')!;
+          ctx.drawImage(source, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           resnetPred = predictWithResnet(imageData);
-          resnetTop3 = getTopPredictions(resnetPred.allConfidences, classes);
+          resnetTop3 = getTopPredictions(resnetPred.allConfidences, [...CLASS_NAMES]);
         }
 
         if (enableLandmark && landmarkReady && handResult) {
           landmarkPred = predictWithLandmarkNN(handResult.features);
-          landmarkTop3 = getTopPredictions(landmarkPred.allConfidences, classes);
+          const preprocessing = await loadPreprocessing();
+          landmarkTop3 = getTopPredictions(landmarkPred.allConfidences, preprocessing.classes);
         }
 
         setResult({
@@ -79,7 +80,6 @@ export function usePrediction() {
           handDetection: handResult,
           resnetTop3,
           landmarkTop3,
-          handTooSmall,
         });
       } catch (err) {
         console.error('Prediction error:', err);

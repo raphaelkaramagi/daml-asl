@@ -13,7 +13,7 @@ interface PreprocessingData {
 }
 
 let landmarkModel: tf.LayersModel | null = null;
-let resnetModel: tf.LayersModel | null = null;
+let resnetModel: tf.GraphModel | null = null;
 let preprocessingData: PreprocessingData | null = null;
 
 export async function loadPreprocessing(): Promise<PreprocessingData> {
@@ -37,10 +37,10 @@ export async function loadLandmarkModel(
 
 export async function loadResnetModel(
   onProgress?: (fraction: number) => void
-): Promise<tf.LayersModel> {
+): Promise<tf.GraphModel> {
   if (resnetModel) return resnetModel;
   await tf.ready();
-  resnetModel = await tf.loadLayersModel(MODEL_PATHS.resnet, {
+  resnetModel = await tf.loadGraphModel(MODEL_PATHS.resnet, {
     onProgress: onProgress ?? (() => {}),
   });
   return resnetModel;
@@ -84,7 +84,8 @@ export function predictWithResnet(imageData: ImageData): Prediction {
     return normalized.expandDims(0);
   });
 
-  const output = resnetModel.predict(tensor) as tf.Tensor;
+  const raw = resnetModel.predict(tensor);
+  const output = (Array.isArray(raw) ? raw[0] : raw) as tf.Tensor;
   const probs = output.dataSync() as Float32Array;
   tensor.dispose();
   output.dispose();
@@ -92,9 +93,8 @@ export function predictWithResnet(imageData: ImageData): Prediction {
   const allConfidences = Array.from(probs);
   const maxIdx = allConfidences.indexOf(Math.max(...allConfidences));
 
-  const classes = preprocessingData?.classes ?? [...CLASS_NAMES];
   return {
-    label: classes[maxIdx] ?? CLASS_NAMES[maxIdx],
+    label: CLASS_NAMES[maxIdx],
     confidence: allConfidences[maxIdx],
     allConfidences,
   };

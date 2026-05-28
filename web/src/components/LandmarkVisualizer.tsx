@@ -10,8 +10,6 @@ interface LandmarkVisualizerProps {
   height: number;
   className?: string;
   showLabels?: boolean;
-  /** Flip x coords for display over CSS-mirrored video (inference stays unmirrored). */
-  mirrored?: boolean;
 }
 
 const FINGER_COLORS = [
@@ -30,18 +28,12 @@ function getFingerIndex(landmarkIdx: number): number {
   return 4;
 }
 
-function displayX(lm: NormalizedLandmark, width: number, mirrored: boolean): number {
-  const x = mirrored ? 1 - lm.x : lm.x;
-  return x * width;
-}
-
 export default function LandmarkVisualizer({
   landmarks,
   width,
   height,
   className = '',
   showLabels = false,
-  mirrored = false,
 }: LandmarkVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -61,8 +53,8 @@ export default function LandmarkVisualizer({
       const b = landmarks[j];
       const fingerIdx = getFingerIndex(Math.max(i, j));
       ctx.beginPath();
-      ctx.moveTo(displayX(a, width, mirrored), a.y * height);
-      ctx.lineTo(displayX(b, width, mirrored), b.y * height);
+      ctx.moveTo(a.x * width, a.y * height);
+      ctx.lineTo(b.x * width, b.y * height);
       ctx.strokeStyle = FINGER_COLORS[fingerIdx];
       ctx.lineWidth = 2;
       ctx.globalAlpha = 0.7;
@@ -71,7 +63,7 @@ export default function LandmarkVisualizer({
     }
 
     landmarks.forEach((lm, idx) => {
-      const x = displayX(lm, width, mirrored);
+      const x = lm.x * width;
       const y = lm.y * height;
       const fingerIdx = getFingerIndex(idx);
       const radius = idx === 0 ? 5 : 3;
@@ -90,7 +82,7 @@ export default function LandmarkVisualizer({
         ctx.fillText(String(idx), x + 5, y - 5);
       }
     });
-  }, [landmarks, width, height, showLabels, mirrored]);
+  }, [landmarks, width, height, showLabels]);
 
   return (
     <canvas
