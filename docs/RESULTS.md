@@ -59,7 +59,7 @@ Classes with no detection on test photos: `A, C, D, E, N, V, X, Z, nothing`
 
 Browser deployment uses training-parity detection:
 
-- **ResNet50** loads as a TF.js **layers-model** (`web/public/models/resnet/`) — the uint8 graph export was unreliable in WebGL.
+- **ResNet50** loads as a TF.js **graph-model** (`web/public/models/resnet-graph/`, float32) — Keras 3 layers export and uint8 graph quant were unreliable in the browser.
 - **Landmark NN** uses pre-session weights (`adaf4d5`) for live parity with unmirrored Kaggle training data.
 - Webcam: MediaPipe runs on **raw unmirrored** video pixels; the preview is CSS-mirrored and the skeleton overlay flips x for display only.
 - Gallery/upload: single-pass IMAGE-mode `detectHandFromImage` (no multi-scale upscale).

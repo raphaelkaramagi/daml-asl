@@ -26,6 +26,35 @@ RESNET_GRAPH_OUT = os.path.join(WEB_MODELS_DIR, "resnet-graph")
 RESNET_LAYERS_OUT = os.path.join(WEB_MODELS_DIR, "resnet")
 
 
+def fix_keras3_layers_model_json(model_json_path: str) -> None:
+    """Patch Keras 3 TF.js export for @tensorflow/tfjs layer deserialization."""
+    with open(model_json_path, encoding="utf-8") as f:
+        topology = json.load(f)
+
+    def walk(obj):
+        if isinstance(obj, dict):
+            if obj.get("class_name") == "InputLayer" and "config" in obj:
+                cfg = obj["config"]
+                if "batch_shape" in cfg and "batch_input_shape" not in cfg:
+                    cfg["batch_input_shape"] = cfg.pop("batch_shape")
+            if obj.get("class_name") == "Functional":
+                obj["class_name"] = "Model"
+            if isinstance(obj.get("dtype"), dict):
+                dtype_name = obj["dtype"].get("config", {}).get("name")
+                if dtype_name:
+                    obj["dtype"] = dtype_name
+            for value in obj.values():
+                walk(value)
+        elif isinstance(obj, list):
+            for item in obj:
+                walk(item)
+
+    walk(topology)
+    with open(model_json_path, "w", encoding="utf-8") as f:
+        json.dump(topology, f)
+    print(f"  -> Patched Keras 3 layers JSON for TF.js: {model_json_path}")
+
+
 def convert_resnet_layers_model():
     """Convert ResNet50 to TF.js layers model (browser-compatible, no uint8 graph quant)."""
     import tensorflow as tf
@@ -43,6 +72,7 @@ def convert_resnet_layers_model():
     try:
         import tensorflowjs as tfjs
         tfjs.converters.save_keras_model(model, RESNET_LAYERS_OUT)
+        fix_keras3_layers_model_json(os.path.join(RESNET_LAYERS_OUT, "model.json"))
         print(f"  -> Saved layers model to {RESNET_LAYERS_OUT}")
         return
     except Exception as exc:
@@ -58,6 +88,7 @@ def convert_resnet_layers_model():
             "--saved_model_tags=serve",
             saved_model_dir, RESNET_LAYERS_OUT,
         ], check=True)
+        fix_keras3_layers_model_json(os.path.join(RESNET_LAYERS_OUT, "model.json"))
         print(f"  -> Saved layers model to {RESNET_LAYERS_OUT}")
 
 
@@ -70,6 +101,43 @@ def convert_landmark_model():
 
 
 def convert_resnet_graph_model():
+    """Convert ResNet50 to TF.js graph model (float32, browser-compatible)."""
+    import tensorflow as tf
+
+    if not os.path.exists(RESNET_MODEL):
+        raise FileNotFoundError(f"ResNet model not found: {RESNET_MODEL}")
+
+    print(f"Converting ResNet graph model: {RESNET_MODEL}")
+    model = tf.keras.models.load_model(RESNET_MODEL, compile=False)
+
+    if os.path.exists(RESNET_GRAPH_OUT):
+        shutil.rmtree(RESNET_GRAPH_OUT)
+    os.makedirs(RESNET_GRAPH_OUT, exist_ok=True)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        saved_model_dir = os.path.join(tmp, "saved_model")
+        tf.saved_model.save(model, saved_model_dir)
+
+        try:
+            from tensorflowjs.converters import tf_saved_model_conversion_v2 as converter
+            converter.convert_tf_saved_model(saved_model_dir, RESNET_GRAPH_OUT)
+            print(f"  -> Saved graph model to {RESNET_GRAPH_OUT}")
+            return
+        except Exception as exc:
+            print(f"  Graph conversion via Python API failed: {exc}")
+            print("  Falling back to tensorflowjs_converter CLI...")
+
+        subprocess.run([
+            sys.executable, "-m", "tensorflowjs.converters.converter",
+            "--input_format=tf_saved_model",
+            "--output_format=tfjs_graph_model",
+            "--saved_model_tags=serve",
+            saved_model_dir, RESNET_GRAPH_OUT,
+        ], check=True)
+        print(f"  -> Saved graph model to {RESNET_GRAPH_OUT}")
+
+
+def convert_resnet_graph_model_quantized():
     """Convert ResNet50 to TF.js graph model with uint8 quantization (optional)."""
     import tensorflow as tf
 
@@ -153,9 +221,9 @@ def main():
     if args.resnet_only:
         if os.path.exists(RESNET_MODEL):
             try:
-                convert_resnet_layers_model()
+                convert_resnet_graph_model()
             except Exception as e:
-                print(f"  ResNet layers conversion failed: {e}")
+                print(f"  ResNet graph conversion failed: {e}")
                 sys.exit(1)
         else:
             print(f"ERROR: ResNet model not found at {RESNET_MODEL}")
@@ -183,9 +251,9 @@ def main():
 
     if os.path.exists(RESNET_MODEL):
         try:
-            convert_resnet_layers_model()
+            convert_resnet_graph_model()
         except Exception as e:
-            print(f"  ResNet layers conversion failed: {e}")
+            print(f"  ResNet graph conversion failed: {e}")
     else:
         print(f"WARNING: ResNet model not found at {RESNET_MODEL}, skipping.")
 

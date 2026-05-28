@@ -13,7 +13,7 @@ export const RESNET_INPUT_SIZE = 96;
 
 export const MODEL_PATHS = {
   landmarkNN: '/models/landmark-nn/model.json',
-  resnet: '/models/resnet/model.json',
+  resnet: '/models/resnet-graph/model.json',
   preprocessing: '/models/preprocessing.json',
 } as const;
 
