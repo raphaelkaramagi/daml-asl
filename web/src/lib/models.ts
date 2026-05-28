@@ -13,12 +13,13 @@ interface PreprocessingData {
 }
 
 let landmarkModel: tf.LayersModel | null = null;
-let resnetModel: tf.GraphModel | null = null;
+let resnetModel: tf.LayersModel | null = null;
 let preprocessingData: PreprocessingData | null = null;
 
 export async function loadPreprocessing(): Promise<PreprocessingData> {
   if (preprocessingData) return preprocessingData;
   const resp = await fetch(MODEL_PATHS.preprocessing);
+  if (!resp.ok) throw new Error(`Failed to load preprocessing: ${resp.status}`);
   preprocessingData = await resp.json();
   return preprocessingData!;
 }
@@ -27,6 +28,7 @@ export async function loadLandmarkModel(
   onProgress?: (fraction: number) => void
 ): Promise<tf.LayersModel> {
   if (landmarkModel) return landmarkModel;
+  await tf.ready();
   landmarkModel = await tf.loadLayersModel(MODEL_PATHS.landmarkNN, {
     onProgress: onProgress ?? (() => {}),
   });
@@ -35,9 +37,10 @@ export async function loadLandmarkModel(
 
 export async function loadResnetModel(
   onProgress?: (fraction: number) => void
-): Promise<tf.GraphModel> {
+): Promise<tf.LayersModel> {
   if (resnetModel) return resnetModel;
-  resnetModel = await tf.loadGraphModel(MODEL_PATHS.resnet, {
+  await tf.ready();
+  resnetModel = await tf.loadLayersModel(MODEL_PATHS.resnet, {
     onProgress: onProgress ?? (() => {}),
   });
   return resnetModel;
@@ -81,8 +84,7 @@ export function predictWithResnet(imageData: ImageData): Prediction {
     return normalized.expandDims(0);
   });
 
-  const raw = resnetModel.predict(tensor);
-  const output = (Array.isArray(raw) ? raw[0] : raw) as tf.Tensor;
+  const output = resnetModel.predict(tensor) as tf.Tensor;
   const probs = output.dataSync() as Float32Array;
   tensor.dispose();
   output.dispose();
@@ -114,4 +116,9 @@ export function isLandmarkModelLoaded() {
 
 export function isResnetModelLoaded() {
   return resnetModel !== null;
+}
+
+export function resetResnetModel() {
+  resnetModel?.dispose();
+  resnetModel = null;
 }

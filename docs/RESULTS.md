@@ -57,12 +57,14 @@ Classes with no detection on test photos: `A, C, D, E, N, V, X, Z, nothing`
 
 ## Web inference
 
-Browser detection matches Python training/eval:
+Browser deployment uses training-parity detection:
 
-- IMAGE-mode multi-scale retry (1×, 1.5×, 2×) with upscale to 300px minimum
-- Hand-crop before ResNet when landmarks found
-- Temporal hold on webcam; pauses when scrolled off-screen
-- Configurable detection confidence (Settings, default 0.2)
+- **ResNet50** loads as a TF.js **layers-model** (`web/public/models/resnet/`) — the uint8 graph export was unreliable in WebGL.
+- **Landmark NN** uses pre-session weights (`adaf4d5`) for live parity with unmirrored Kaggle training data.
+- Webcam: MediaPipe runs on **raw unmirrored** video pixels; the preview is CSS-mirrored and the skeleton overlay flips x for display only.
+- Gallery/upload: single-pass IMAGE-mode `detectHandFromImage` (no multi-scale upscale).
+- Hand-crop before ResNet when landmarks are found.
+- Configurable detection confidence (Settings, default **0.5**).
 
 **ResNet50** is recommended for live demo. **Landmark NN** depends on MediaPipe detecting a hand first.
 

@@ -9,6 +9,7 @@ import type { PredictionResult } from '@/hooks/usePrediction';
 interface PredictionDisplayProps {
   result: PredictionResult | null;
   loading?: boolean;
+  onRetryResnet?: () => void;
 }
 
 function ModelResultCard({
@@ -20,6 +21,8 @@ function ModelResultCard({
   noHand,
   disabled,
   notLoaded,
+  loadError,
+  onRetry,
 }: {
   title: string;
   badge: string;
@@ -29,6 +32,8 @@ function ModelResultCard({
   noHand?: boolean;
   disabled?: boolean;
   notLoaded?: boolean;
+  loadError?: string | null;
+  onRetry?: () => void;
 }) {
   if (disabled) {
     return (
@@ -92,7 +97,22 @@ function ModelResultCard({
       ) : notLoaded ? (
         <div className="text-center py-6">
           <div className="text-2xl text-zinc-700 mb-2">--</div>
-          <p className="text-xs text-zinc-600">Model not loaded</p>
+          {loadError ? (
+            <>
+              <p className="text-xs text-red-400 mb-2">{loadError}</p>
+              {onRetry && (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="text-xs text-blue-400 hover:text-blue-300 underline"
+                >
+                  Retry loading
+                </button>
+              )}
+            </>
+          ) : (
+            <p className="text-xs text-zinc-600">Model not loaded</p>
+          )}
         </div>
       ) : noHand ? (
         <div className="text-center py-6">
@@ -109,8 +129,8 @@ function ModelResultCard({
   );
 }
 
-export default function PredictionDisplay({ result, loading }: PredictionDisplayProps) {
-  const { enableResnet, enableLandmark, resnetLoaded, landmarkLoaded } = useAppStore();
+export default function PredictionDisplay({ result, loading, onRetryResnet }: PredictionDisplayProps) {
+  const { enableResnet, enableLandmark, resnetLoaded, landmarkLoaded, resnetLoadError } = useAppStore();
 
   const match =
     result?.resnet && result?.landmark && result.resnet.label === result.landmark.label;
@@ -140,6 +160,8 @@ export default function PredictionDisplay({ result, loading }: PredictionDisplay
           color="#3b82f6"
           disabled={!enableResnet}
           notLoaded={enableResnet && !resnetLoaded}
+          loadError={enableResnet && !resnetLoaded ? resnetLoadError : null}
+          onRetry={onRetryResnet}
           noHand={false}
         />
         <ModelResultCard

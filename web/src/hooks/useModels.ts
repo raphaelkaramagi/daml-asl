@@ -6,6 +6,7 @@ import {
   loadLandmarkModel,
   loadResnetModel,
   loadPreprocessing,
+  resetResnetModel,
 } from '@/lib/models';
 import { initHandLandmarker, updateHandLandmarkerConfidence } from '@/lib/landmarks';
 
@@ -17,6 +18,28 @@ export function useModels() {
   useEffect(() => {
     updateHandLandmarkerConfidence(detectionConfidence);
   }, [detectionConfidence]);
+
+  const retryResnet = useCallback(async () => {
+    store.setResnetLoadError(null);
+    store.setResnetLoaded(false);
+    store.setResnetProgress(0);
+    store.setLoadingModel('resnet');
+
+    try {
+      resetResnetModel();
+      await loadResnetModel((p) => store.setResnetProgress(p));
+      store.setResnetLoaded(true);
+      store.setResnetLoadError(null);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to load ResNet model';
+      store.setResnetLoadError(message);
+      console.error('Failed to load resnet model:', err);
+    } finally {
+      store.setLoadingModel(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const initModels = useCallback(async () => {
     if (initialized.current) return;
@@ -30,13 +53,6 @@ export function useModels() {
     }
 
     try {
-      store.setLoadingModel('mediapipe');
-      await initHandLandmarker(store.detectionConfidence);
-    } catch (err) {
-      console.error('Failed to init MediaPipe:', err);
-    }
-
-    try {
       store.setLoadingModel('landmark');
       await loadLandmarkModel((p) => store.setLandmarkProgress(p));
       store.setLandmarkLoaded(true);
@@ -45,10 +61,21 @@ export function useModels() {
     }
 
     try {
+      store.setLoadingModel('mediapipe');
+      await initHandLandmarker(store.detectionConfidence);
+    } catch (err) {
+      console.error('Failed to init MediaPipe:', err);
+    }
+
+    try {
       store.setLoadingModel('resnet');
       await loadResnetModel((p) => store.setResnetProgress(p));
       store.setResnetLoaded(true);
+      store.setResnetLoadError(null);
     } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to load ResNet model';
+      store.setResnetLoadError(message);
       console.error('Failed to load resnet model:', err);
     }
 
@@ -63,8 +90,10 @@ export function useModels() {
   return {
     landmarkReady: store.landmarkLoaded,
     resnetReady: store.resnetLoaded,
+    resnetLoadError: store.resnetLoadError,
     loading: store.loadingModel,
     landmarkProgress: store.landmarkProgress,
     resnetProgress: store.resnetProgress,
+    retryResnet,
   };
 }

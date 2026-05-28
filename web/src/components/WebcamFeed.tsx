@@ -4,7 +4,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useWebcam } from '@/hooks/useWebcam';
 import LandmarkVisualizer from './LandmarkVisualizer';
-import { detectHandWithHold, resetTemporalHold } from '@/lib/landmarks';
+import { detectHandFromVideo, setRunningMode } from '@/lib/landmarks';
 import {
   predictWithLandmarkNN,
   predictWithResnet,
@@ -33,7 +33,7 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
   const [landmarks, setLandmarks] = useState<NormalizedLandmark[] | null>(null);
   const [displaySize, setDisplaySize] = useState({ width: 640, height: 480 });
   const [detectionStatus, setDetectionStatus] = useState<
-    'none' | 'detected' | 'held' | 'missing' | 'small'
+    'none' | 'detected' | 'missing' | 'small'
   >('none');
   const lastPredTime = useRef(0);
   const classesRef = useRef<string[]>([]);
@@ -98,19 +98,13 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
       useAppStore.getState();
 
     try {
-      const handResult = detectHandWithHold(video, { mirror: true });
+      const handResult = detectHandFromVideo(video, now);
       setLandmarks(handResult?.landmarks ?? null);
 
       let status: typeof detectionStatus = 'missing';
       if (handResult) {
         const bbox = getPaddedBBox(handResult.landmarks);
-        if (bbox.area < SMALL_HAND_AREA_THRESHOLD) {
-          status = 'small';
-        } else if (handResult.held) {
-          status = 'held';
-        } else {
-          status = 'detected';
-        }
+        status = bbox.area < SMALL_HAND_AREA_THRESHOLD ? 'small' : 'detected';
       }
       setDetectionStatus(status);
 
@@ -118,7 +112,6 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
         const result: PredictionResult = {
           handDetection: handResult,
           handTooSmall: status === 'small',
-          detectionHeld: handResult?.held,
         };
 
         const classes = classesRef.current;
@@ -130,7 +123,7 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
         }
 
         if (enableResnet && resnetLoaded) {
-          const canvas = drawSourceToCanvas(video, { mirror: true });
+          const canvas = drawSourceToCanvas(video);
           const imageData = canvasToResnetImageData(
             canvas,
             handResult?.landmarks
@@ -151,7 +144,10 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
 
   useEffect(() => {
     if (active) {
+      setRunningMode('VIDEO');
       animRef.current = requestAnimationFrame(processFrame);
+    } else {
+      setRunningMode('IMAGE');
     }
     return () => {
       cancelAnimationFrame(animRef.current);
@@ -163,7 +159,7 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
       stop();
       setLandmarks(null);
       setDetectionStatus('none');
-      resetTemporalHold();
+      setRunningMode('IMAGE');
     } else {
       start();
     }
@@ -172,7 +168,6 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
   const statusLabel = {
     none: '',
     detected: 'Hand detected',
-    held: 'Hand detected',
     missing: 'No hand — center hand in frame',
     small: 'Move hand closer',
   }[detectionStatus];
@@ -180,7 +175,6 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
   const statusColor = {
     none: '',
     detected: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-    held: 'text-emerald-400/80 bg-emerald-500/10 border-emerald-500/30',
     missing: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
     small: 'text-orange-400 bg-orange-500/10 border-orange-500/30',
   }[detectionStatus];
@@ -203,6 +197,7 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
             landmarks={landmarks}
             width={displaySize.width}
             height={displaySize.height}
+            mirrored
           />
         )}
         {active && (

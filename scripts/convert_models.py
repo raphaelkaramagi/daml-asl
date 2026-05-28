@@ -23,6 +23,42 @@ RESNET_MODEL = os.path.join(PROJECT_ROOT, "models", "best_asl_resnet50_phase2.h5
 LABEL_ENCODER = os.path.join(PROJECT_ROOT, "data", "label_encoder.joblib")
 SCALER = os.path.join(PROJECT_ROOT, "data", "scaler.joblib")
 RESNET_GRAPH_OUT = os.path.join(WEB_MODELS_DIR, "resnet-graph")
+RESNET_LAYERS_OUT = os.path.join(WEB_MODELS_DIR, "resnet")
+
+
+def convert_resnet_layers_model():
+    """Convert ResNet50 to TF.js layers model (browser-compatible, no uint8 graph quant)."""
+    import tensorflow as tf
+
+    if not os.path.exists(RESNET_MODEL):
+        raise FileNotFoundError(f"ResNet model not found: {RESNET_MODEL}")
+
+    print(f"Converting ResNet layers model: {RESNET_MODEL}")
+    model = tf.keras.models.load_model(RESNET_MODEL, compile=False)
+
+    if os.path.exists(RESNET_LAYERS_OUT):
+        shutil.rmtree(RESNET_LAYERS_OUT)
+    os.makedirs(RESNET_LAYERS_OUT, exist_ok=True)
+
+    try:
+        import tensorflowjs as tfjs
+        tfjs.converters.save_keras_model(model, RESNET_LAYERS_OUT)
+        print(f"  -> Saved layers model to {RESNET_LAYERS_OUT}")
+        return
+    except Exception as exc:
+        print(f"  Layers conversion via Python API failed: {exc}")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        saved_model_dir = os.path.join(tmp, "saved_model")
+        tf.saved_model.save(model, saved_model_dir)
+        subprocess.run([
+            sys.executable, "-m", "tensorflowjs.converters.converter",
+            "--input_format=tf_saved_model",
+            "--output_format=tfjs_layers_model",
+            "--saved_model_tags=serve",
+            saved_model_dir, RESNET_LAYERS_OUT,
+        ], check=True)
+        print(f"  -> Saved layers model to {RESNET_LAYERS_OUT}")
 
 
 def convert_landmark_model():
@@ -33,8 +69,8 @@ def convert_landmark_model():
     print(f"  -> Saved to {os.path.join(WEB_MODELS_DIR, 'landmark-nn')}")
 
 
-def convert_resnet_model():
-    """Convert ResNet50 to TF.js graph model with uint8 quantization."""
+def convert_resnet_graph_model():
+    """Convert ResNet50 to TF.js graph model with uint8 quantization (optional)."""
     import tensorflow as tf
 
     if not os.path.exists(RESNET_MODEL):
@@ -107,7 +143,25 @@ def main():
         action="store_true",
         help="Export landmark NN and preprocessing only (skip ResNet conversion)",
     )
+    parser.add_argument(
+        "--resnet-only",
+        action="store_true",
+        help="Export ResNet layers model only (skip landmark conversion)",
+    )
     args = parser.parse_args()
+
+    if args.resnet_only:
+        if os.path.exists(RESNET_MODEL):
+            try:
+                convert_resnet_layers_model()
+            except Exception as e:
+                print(f"  ResNet layers conversion failed: {e}")
+                sys.exit(1)
+        else:
+            print(f"ERROR: ResNet model not found at {RESNET_MODEL}")
+            sys.exit(1)
+        print("\nResNet-only export complete.")
+        return
 
     if not os.path.exists(LANDMARK_MODEL):
         print(f"ERROR: Landmark model not found at {LANDMARK_MODEL}")
@@ -129,9 +183,9 @@ def main():
 
     if os.path.exists(RESNET_MODEL):
         try:
-            convert_resnet_model()
+            convert_resnet_layers_model()
         except Exception as e:
-            print(f"  ResNet conversion failed: {e}")
+            print(f"  ResNet layers conversion failed: {e}")
     else:
         print(f"WARNING: ResNet model not found at {RESNET_MODEL}, skipping.")
 

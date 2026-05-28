@@ -9,12 +9,14 @@ import ImageUploader from './ImageUploader';
 import PredictionDisplay from './PredictionDisplay';
 import LandmarkVisualizer from './LandmarkVisualizer';
 import { usePrediction, type PredictionResult } from '@/hooks/usePrediction';
+import { useModels } from '@/hooks/useModels';
 
 type InputMode = 'webcam' | 'upload';
 
 export default function LivePredictor() {
   const [mode, setMode] = useState<InputMode>('upload');
   const { result, loading, predict, clear } = usePrediction();
+  const { retryResnet } = useModels();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [webcamResult, setWebcamResult] = useState<PredictionResult | null>(null);
 
@@ -110,7 +112,11 @@ export default function LivePredictor() {
         </div>
 
         <div>
-          <PredictionDisplay result={activeResult ?? null} loading={loading} />
+          <PredictionDisplay
+            result={activeResult ?? null}
+            loading={loading}
+            onRetryResnet={retryResnet}
+          />
         </div>
       </div>
 
@@ -124,7 +130,7 @@ export default function LivePredictor() {
           {
             title: 'MediaPipe',
             desc: '21 hand landmarks detected',
-            detail: 'Multi-scale IMAGE detection (1×, 1.5×, 2×)',
+            detail: 'Single-pass detection; webcam features stay unmirrored',
           },
           {
             title: 'Landmark NN',
