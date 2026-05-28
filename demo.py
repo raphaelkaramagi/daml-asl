@@ -298,7 +298,7 @@ def show_model_info(models):
     print(f"\n{Colors.CYAN}Approach 2: Landmark Neural Network{Colors.END}")
     print(f"  • Input: 63 features (21 landmarks × 3 coords)")
     print(f"  • Architecture: Dense NN (128→64→29)")
-    print(f"  • Parameters: ~10K")
+    print(f"  • Parameters: ~18K")
     if os.path.exists(LANDMARK_MODEL):
         size_kb = os.path.getsize(LANDMARK_MODEL) / 1024
         print(f"  • Model size: {size_kb:.1f} KB")

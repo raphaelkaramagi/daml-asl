@@ -15,40 +15,49 @@ Per-class detection improved for most letters. Weak classes remain `nothing` (0.
 
 ## Landmark neural network
 
+### Deployed in web demo (original weights)
+
 | Metric | Value |
 |---|---|
-| Training samples | 68429 |
+| Val accuracy | **98.97%** |
+| Feature test split | **98.88%** |
+| Parameters | **~18K** |
+| TF.js size | **~72 KB** |
+
+### Latest retrain pipeline (`results/landmark_training.json`)
+
+| Metric | Value |
+|---|---|
+| Training samples | 68,429 |
 | Feature noise std | 0.015 |
 | Best val accuracy | **95.7%** |
 | Held-out test accuracy | **95.7%** |
 
-
-Training uses wrist-relative 63-d features with Gaussian noise augmentation for live robustness.
-End-to-end accuracy is limited by MediaPipe detection rate on the 28-photo test set.
+The live site uses the **original landmark weights** for webcam parity with unmirrored Kaggle training data. End-to-end accuracy on the 28-photo test set is limited by MediaPipe detection rate, not classifier error.
 
 ## ResNet50
 
-| Metric | Before | After |
+| Metric | Before retrain | After retrain |
 |---|---|---|
 | Val accuracy (phase 2) | 48.06% | See training checkpoint |
-| Test accuracy (28 photos) | 67.9% | **96.4%** (27/28) |
+| End-to-end (28 photos) | 67.9% (19/28) | **96.4%** (27/28) |
 
 Training uses hand-cropped 96×96 images, no horizontal flip, 3-phase schedule with early stopping on `val_accuracy`.
 
 ## Fair evaluation (28-photo test set)
 
-Evaluated with `scripts/evaluate_models.py` using shared detection (`scripts/mediapipe_detect.py`, conf=0.2).
+Evaluated with `scripts/evaluate_models.py` using shared detection (`scripts/mediapipe_detect.py`, conf=0.2). ResNet uses hand-crop when landmarks are found; otherwise full frame.
 
 | Model | Detection rate | Given detection | End-to-end |
 |---|---|---|---|
-| ResNet50 | 67.9%* | — | **96.4%** |
-| Landmark NN | 67.9% | **100.0%** | **67.9%** |
+| ResNet50 | 67.9%* | — | **96.4%** (27/28) |
+| Landmark NN | 67.9% | **100.0%** | **67.9%** (19/28) |
 
 > \* Detection rate is shared — both models use the same MediaPipe hand detection for fair comparison.
 
 Classes with no detection on test photos: `A, C, D, E, N, V, X, Z, nothing`
 
-### Previous baseline
+### Previous baseline (pre-retrain ResNet)
 
 | Model | End-to-end | Given detection |
 |---|---|---|
@@ -57,15 +66,15 @@ Classes with no detection on test photos: `A, C, D, E, N, V, X, Z, nothing`
 
 ## Web inference
 
-Browser deployment uses training-parity detection:
+Browser deployment:
 
-- **ResNet50** loads as a TF.js **graph-model** (`web/public/models/resnet-graph/`, float32) — Keras 3 layers export and uint8 graph quant were unreliable in the browser.
-- **Landmark NN** uses pre-session weights (`adaf4d5`) for live parity with unmirrored Kaggle training data.
-- Webcam: MediaPipe runs on **raw unmirrored** video pixels; the preview is CSS-mirrored and the skeleton overlay flips x for display only.
-- Gallery/upload: single-pass IMAGE-mode `detectHandFromImage` (no multi-scale upscale).
-- Hand-crop before ResNet when landmarks are found.
-- Configurable detection confidence (Settings, default **0.5**).
+- **ResNet50** — TF.js **float32 graph-model** at `web/public/models/resnet-graph/` (~91 MB). Keras 3 layers export and uint8 graph quant were unreliable in the browser.
+- **Landmark NN** — original TF.js weights at `web/public/models/landmark-nn/` (~72 KB) for live parity with unmirrored training data.
+- **Webcam** — MediaPipe on raw unmirrored video pixels; CSS mirrors the preview and landmark x-coordinates are flipped in the overlay only.
+- **Gallery/upload** — single-pass IMAGE-mode `detectHandFromImage`; small images (&lt;300px) are upscaled before detection.
+- **ResNet webcam path** — full-frame resize to 96×96 (matches pre-accuracy-work behavior).
+- **Settings** — detection confidence default **0.3**; toggle models on/off.
 
-**ResNet50** is recommended for live demo. **Landmark NN** depends on MediaPipe detecting a hand first.
+**ResNet50** is recommended for live demo (96.4% end-to-end on the 28-photo test set). **Landmark NN** is 100% accurate when MediaPipe detects a hand, but end-to-end accuracy is capped by the 67.9% detection rate.
 
 Results are synced to `web/public/evaluation-results.json` for the demo evaluation banner.

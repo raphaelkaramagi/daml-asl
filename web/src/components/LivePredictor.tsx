@@ -125,7 +125,7 @@ export default function LivePredictor() {
           {
             title: 'ResNet50',
             desc: 'Primary model — 96.4% end-to-end',
-            detail: 'Hand-cropped 96×96 pixels, always predicts',
+            detail: 'Full-frame 96×96 resize on webcam; always predicts',
           },
           {
             title: 'MediaPipe',
