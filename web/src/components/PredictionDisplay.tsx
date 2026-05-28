@@ -89,15 +89,15 @@ function ModelResultCard({
             </div>
           )}
         </>
-      ) : noHand ? (
-        <div className="text-center py-6">
-          <div className="text-2xl text-zinc-600 mb-2">?</div>
-          <p className="text-xs text-zinc-500">No hand detected</p>
-        </div>
       ) : notLoaded ? (
         <div className="text-center py-6">
           <div className="text-2xl text-zinc-700 mb-2">--</div>
           <p className="text-xs text-zinc-600">Model not loaded</p>
+        </div>
+      ) : noHand ? (
+        <div className="text-center py-6">
+          <div className="text-2xl text-zinc-600 mb-2">?</div>
+          <p className="text-xs text-zinc-500">No hand detected</p>
         </div>
       ) : (
         <div className="text-center py-6">
@@ -140,6 +140,7 @@ export default function PredictionDisplay({ result, loading }: PredictionDisplay
           color="#3b82f6"
           disabled={!enableResnet}
           notLoaded={enableResnet && !resnetLoaded}
+          noHand={false}
         />
         <ModelResultCard
           title="Landmark NN"
@@ -147,7 +148,13 @@ export default function PredictionDisplay({ result, loading }: PredictionDisplay
           prediction={result?.landmark}
           top3={result?.landmarkTop3}
           color="#10b981"
-          noHand={result !== null && !result.landmark && result.handDetection === null}
+          noHand={
+            enableLandmark &&
+            landmarkLoaded &&
+            result !== null &&
+            !result.landmark &&
+            result.handDetection === null
+          }
           disabled={!enableLandmark}
           notLoaded={enableLandmark && !landmarkLoaded}
         />
@@ -156,6 +163,18 @@ export default function PredictionDisplay({ result, loading }: PredictionDisplay
       {loading && (
         <p className="text-center text-xs text-zinc-500 animate-pulse">Processing...</p>
       )}
+
+      {result &&
+        enableLandmark &&
+        landmarkLoaded &&
+        !result.landmark &&
+        result.handDetection === null &&
+        result.resnet && (
+          <p className="text-center text-[10px] text-zinc-500">
+            MediaPipe did not detect a hand — ResNet still predicts from the full image.
+            Lower detection confidence in Settings or try a clearer hand pose.
+          </p>
+        )}
     </div>
   );
 }

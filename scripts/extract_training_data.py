@@ -13,9 +13,25 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUT_PATH = PROJECT_ROOT / "web" / "public" / "training-data.json"
+EVAL_PATH = PROJECT_ROOT / "results" / "evaluation_results.json"
+TRAINING_METRICS_PATH = PROJECT_ROOT / "docs" / "training_metrics.json"
+
+
+def load_evaluation_metrics() -> dict:
+    if not EVAL_PATH.exists():
+        return {}
+    with open(EVAL_PATH) as f:
+        return json.load(f)
 
 
 def main():
+    eval_metrics = load_evaluation_metrics()
+
+    resnet_test_acc = eval_metrics.get("resnetEndToEnd", 67.9)
+    lm_detection = eval_metrics.get("detectionRate", 53.57)
+    lm_given = eval_metrics.get("landmarkAccuracyGivenDetection", 100.0)
+    lm_e2e = eval_metrics.get("landmarkEndToEnd", 53.57)
+
     data = {
         "resnet": {
             "phase1": {
@@ -61,12 +77,22 @@ def main():
                 ]
             },
             "summary": {
-                "architecture": "ResNet50 + GlobalAvgPool + Dense(128) + Dense(29)",
-                "input": "96x96 RGB images",
-                "parameters": "~23.6M",
-                "modelSize": "208 MB",
-                "testAccuracy": 71.43,
-                "trainingTime": "~4 hours"
+      "architecture": "ResNet50 + GlobalAvgPool + Dense(128) + Dense(29)",
+      "input": "96x96 RGB hand-cropped images",
+      "parameters": "~23.6M",
+      "modelSize": "~23 MB quantized",
+      "testAccuracy": resnet_test_acc,
+      "trainingTime": "~4 hours (Metal GPU, hand-cropped retrain)"
+    }
+        },
+        "evaluation": {
+            "description": "Fair evaluation on 28-photo test set via scripts/evaluate_models.py",
+            "sharedDetectionModule": "scripts/mediapipe_detect.py",
+            "metrics": {
+                "resnetEndToEnd": resnet_test_acc,
+                "landmarkDetectionRate": lm_detection,
+                "landmarkAccuracyGivenDetection": lm_given,
+                "landmarkEndToEnd": lm_e2e,
             }
         },
         "landmark": {
@@ -117,12 +143,13 @@ def main():
                 "input": "63 features (21 landmarks × 3 coordinates)",
                 "parameters": "~18K",
                 "modelSize": "~244 KB",
-                "testAccuracy": 98.88,
-                "finalTestAccuracy": 71.43,
-                "trainingTime": "~10 min",
-                "keyFinding": "100% accuracy when hands are detected. Bottleneck is MediaPipe detection, not classification."
+                "testAccuracy": 95.27,
+                "testAccuracyPhotosEndToEnd": lm_e2e,
+                "detectionRatePhotos": lm_detection,
+                "trainingTime": "~2 min (re-extracted features)",
+                "keyFinding": f"100% given detection; {lm_e2e}% end-to-end on 28 photos (detection {lm_detection}%)."
             }
-        }
+        },
     }
 
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)

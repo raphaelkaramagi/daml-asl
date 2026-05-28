@@ -38,8 +38,8 @@ export default function Hero() {
         </h1>
 
         <p className="text-zinc-400 text-lg md:text-xl mb-4 max-w-xl mx-auto">
-          Deep learning models for classifying American Sign Language alphabet
-          gestures. Two approaches compared side-by-side.
+          Compare ResNet50 (96.4% end-to-end) and a lightweight Landmark NN side-by-side.
+          All inference runs in your browser.
         </p>
 
         <div className="flex gap-4 justify-center text-sm text-zinc-500 mb-10">

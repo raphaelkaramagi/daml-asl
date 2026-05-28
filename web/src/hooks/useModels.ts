@@ -7,11 +7,16 @@ import {
   loadResnetModel,
   loadPreprocessing,
 } from '@/lib/models';
-import { initHandLandmarker } from '@/lib/landmarks';
+import { initHandLandmarker, updateHandLandmarkerConfidence } from '@/lib/landmarks';
 
 export function useModels() {
   const initialized = useRef(false);
   const store = useAppStore();
+  const detectionConfidence = useAppStore((s) => s.detectionConfidence);
+
+  useEffect(() => {
+    updateHandLandmarkerConfidence(detectionConfidence);
+  }, [detectionConfidence]);
 
   const initModels = useCallback(async () => {
     if (initialized.current) return;

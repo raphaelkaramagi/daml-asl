@@ -90,8 +90,9 @@ export function predictWithResnet(imageData: ImageData): Prediction {
   const allConfidences = Array.from(probs);
   const maxIdx = allConfidences.indexOf(Math.max(...allConfidences));
 
+  const classes = preprocessingData?.classes ?? [...CLASS_NAMES];
   return {
-    label: CLASS_NAMES[maxIdx],
+    label: classes[maxIdx] ?? CLASS_NAMES[maxIdx],
     confidence: allConfidences[maxIdx],
     allConfidences,
   };

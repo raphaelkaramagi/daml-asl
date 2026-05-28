@@ -218,6 +218,10 @@ data/asl_alphabet_test 2/
 !data/label_encoder.joblib
 !data/scaler.joblib
 
+# Generated hand crops and downloaded MediaPipe model
+data/asl_hand_crops/
+scripts/models/
+
 # Trained models and large data files (too large for git, generate locally)
 models/
 data/asl_landmarks_train.csv

@@ -69,14 +69,22 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 3. Apple Silicon — replace TensorFlow
+### 3. Apple Silicon — enable GPU (Metal)
 
-On M1/M2/M3 Macs, replace the standard TensorFlow with the Apple Silicon builds for GPU acceleration:
+On M1/M2/M3/M4 Macs, install the Metal plugin so TensorFlow training uses the Apple GPU:
 
 ```bash
-pip uninstall tensorflow -y
-pip install tensorflow-macos tensorflow-metal
+pip install tensorflow-metal
 ```
+
+Verify:
+
+```bash
+python -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
+# Expected: [PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')]
+```
+
+> **Note:** MediaPipe hand detection (`reextract_landmarks.py`, `generate_hand_crops.py`) runs on CPU. Use `--workers 8` to parallelize across CPU cores — this is much faster than a single process and avoids known GPU memory issues with batch MediaPipe on macOS.
 
 ### 4. Verify installation
 
@@ -149,6 +157,25 @@ jupyter lab
 | `05-training-approach-1.ipynb` | ResNet50 two-phase transfer learning → `models/best_asl_resnet50_phase2.h5` |
 | `06-training-approach-2-landmarks.ipynb` | Landmark NN training → `data/nn_landmark_model.keras` |
 | `07-model-comparison-evaluation.ipynb` | Side-by-side evaluation on test set |
+
+### Improved retraining (scripts)
+
+For better accuracy, use the shared detection module and improved training scripts:
+
+```bash
+conda activate daml-asl
+
+python scripts/reextract_landmarks.py       # ~30 min — uses mediapipe_detect.py
+# Then run notebook 06 on the new CSV
+
+python scripts/generate_hand_crops.py       # ~1 hr — cropped 96×96 images for ResNet
+python scripts/train_resnet_improved.py     # ~4–8 hrs GPU — 3-phase training
+
+python scripts/convert_models.py            # TF.js graph model for web
+python scripts/evaluate_models.py           # Fair metrics on 28-photo test set
+```
+
+> **GPU strongly recommended** for `train_resnet_improved.py`. On CPU, expect 2–3× longer than the original ~4 hour ResNet training.
 
 ---
 

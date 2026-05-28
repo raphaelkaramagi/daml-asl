@@ -29,7 +29,11 @@ logging.getLogger('absl').setLevel(logging.ERROR)
 
 from tensorflow import keras
 import joblib
-import mediapipe as mp
+import sys
+
+# Shared detection module (same pipeline as web app)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from mediapipe_detect import detect_hand, crop_hand, DEFAULT_CONFIDENCE
 
 # Paths
 MODELS_DIR = "models"
@@ -113,20 +117,11 @@ def load_models(quiet=False):
     return models
 
 
-def extract_landmarks(image_rgb, min_confidence=0.1):
-    """Extract hand landmarks using MediaPipe."""
-    mp_hands = mp.solutions.hands
-    with mp_hands.Hands(static_image_mode=True, max_num_hands=1, min_detection_confidence=min_confidence) as hands:
-        results = hands.process(image_rgb)
-        
-        if results.multi_hand_landmarks:
-            hand_landmarks = results.multi_hand_landmarks[0]
-            wrist = hand_landmarks.landmark[0]
-            
-            landmarks = []
-            for lm in hand_landmarks.landmark:
-                landmarks.extend([lm.x - wrist.x, lm.y - wrist.y, lm.z - wrist.z])
-            return np.array(landmarks)
+def extract_landmarks(image_rgb, min_confidence=DEFAULT_CONFIDENCE):
+    """Extract hand landmarks using shared MediaPipe detection module."""
+    result = detect_hand(image_rgb, conf=min_confidence)
+    if result is not None:
+        return np.array(result.features)
     return None
 
 
@@ -139,9 +134,14 @@ def predict_image(image_path, models):
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     predictions = {}
     
-    # ResNet50 prediction
+    # ResNet50 prediction (hand-cropped when landmarks available)
     if 'resnet' in models:
-        img_resized = cv2.resize(image_rgb, (96, 96))
+        hand = detect_hand(image_rgb, conf=DEFAULT_CONFIDENCE)
+        if hand is not None:
+            img_for_resnet = crop_hand(image_rgb, hand.landmarks)
+        else:
+            img_for_resnet = image_rgb
+        img_resized = cv2.resize(img_for_resnet, (96, 96))
         img_normalized = img_resized / 255.0
         img_batch = np.expand_dims(img_normalized, axis=0)
         

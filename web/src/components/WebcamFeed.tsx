@@ -1,12 +1,22 @@
 'use client';
 
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useWebcam } from '@/hooks/useWebcam';
 import LandmarkVisualizer from './LandmarkVisualizer';
-import { detectHandFromVideo, setRunningMode } from '@/lib/landmarks';
-import { predictWithLandmarkNN, predictWithResnet, getTopPredictions } from '@/lib/models';
-import { CLASS_NAMES } from '@/lib/constants';
+import { detectHandWithHold, resetTemporalHold } from '@/lib/landmarks';
+import {
+  predictWithLandmarkNN,
+  predictWithResnet,
+  getTopPredictions,
+  loadPreprocessing,
+} from '@/lib/models';
+import {
+  canvasToResnetImageData,
+  drawSourceToCanvas,
+  getPaddedBBox,
+  SMALL_HAND_AREA_THRESHOLD,
+} from '@/lib/image-utils';
 import { useAppStore } from '@/store/app-store';
 import type { NormalizedLandmark } from '@mediapipe/tasks-vision';
 import type { PredictionResult } from '@/hooks/usePrediction';
@@ -19,9 +29,34 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
   const { videoRef, active, error, start, stop } = useWebcam();
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number>(0);
+  const isVisibleRef = useRef(true);
   const [landmarks, setLandmarks] = useState<NormalizedLandmark[] | null>(null);
   const [displaySize, setDisplaySize] = useState({ width: 640, height: 480 });
+  const [detectionStatus, setDetectionStatus] = useState<
+    'none' | 'detected' | 'held' | 'missing' | 'small'
+  >('none');
   const lastPredTime = useRef(0);
+  const classesRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    loadPreprocessing().then((p) => {
+      classesRef.current = p.classes;
+    });
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisibleRef.current = entry.isIntersecting && entry.intersectionRatio >= 0.25;
+      },
+      { threshold: [0, 0.25, 0.5, 1] }
+    );
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -43,6 +78,11 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
       return;
     }
 
+    if (!isVisibleRef.current) {
+      animRef.current = requestAnimationFrame(processFrame);
+      return;
+    }
+
     if (video.clientWidth > 0) {
       setDisplaySize({ width: video.clientWidth, height: video.clientHeight });
     }
@@ -54,33 +94,50 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
     }
     lastPredTime.current = now;
 
-    const { enableResnet, enableLandmark, resnetLoaded, landmarkLoaded } = useAppStore.getState();
+    const { enableResnet, enableLandmark, resnetLoaded, landmarkLoaded } =
+      useAppStore.getState();
 
     try {
-      const handResult = detectHandFromVideo(video, now);
+      const handResult = detectHandWithHold(video, { mirror: true });
       setLandmarks(handResult?.landmarks ?? null);
+
+      let status: typeof detectionStatus = 'missing';
+      if (handResult) {
+        const bbox = getPaddedBBox(handResult.landmarks);
+        if (bbox.area < SMALL_HAND_AREA_THRESHOLD) {
+          status = 'small';
+        } else if (handResult.held) {
+          status = 'held';
+        } else {
+          status = 'detected';
+        }
+      }
+      setDetectionStatus(status);
 
       if (handResult || (enableResnet && resnetLoaded)) {
         const result: PredictionResult = {
           handDetection: handResult,
+          handTooSmall: status === 'small',
+          detectionHeld: handResult?.held,
         };
+
+        const classes = classesRef.current;
 
         if (enableLandmark && landmarkLoaded && handResult) {
           const pred = predictWithLandmarkNN(handResult.features);
           result.landmark = pred;
-          result.landmarkTop3 = getTopPredictions(pred.allConfidences, [...CLASS_NAMES]);
+          result.landmarkTop3 = getTopPredictions(pred.allConfidences, classes);
         }
 
         if (enableResnet && resnetLoaded) {
-          const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          const ctx = canvas.getContext('2d')!;
-          ctx.drawImage(video, 0, 0);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const canvas = drawSourceToCanvas(video, { mirror: true });
+          const imageData = canvasToResnetImageData(
+            canvas,
+            handResult?.landmarks
+          );
           const pred = predictWithResnet(imageData);
           result.resnet = pred;
-          result.resnetTop3 = getTopPredictions(pred.allConfidences, [...CLASS_NAMES]);
+          result.resnetTop3 = getTopPredictions(pred.allConfidences, classes);
         }
 
         onPrediction(result);
@@ -94,7 +151,6 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
 
   useEffect(() => {
     if (active) {
-      setRunningMode('VIDEO');
       animRef.current = requestAnimationFrame(processFrame);
     }
     return () => {
@@ -106,15 +162,35 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
     if (active) {
       stop();
       setLandmarks(null);
-      setRunningMode('IMAGE');
+      setDetectionStatus('none');
+      resetTemporalHold();
     } else {
       start();
     }
   }, [active, start, stop]);
 
+  const statusLabel = {
+    none: '',
+    detected: 'Hand detected',
+    held: 'Hand detected',
+    missing: 'No hand — center hand in frame',
+    small: 'Move hand closer',
+  }[detectionStatus];
+
+  const statusColor = {
+    none: '',
+    detected: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+    held: 'text-emerald-400/80 bg-emerald-500/10 border-emerald-500/30',
+    missing: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+    small: 'text-orange-400 bg-orange-500/10 border-orange-500/30',
+  }[detectionStatus];
+
   return (
     <div className="space-y-3">
-      <div ref={containerRef} className="relative rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 min-h-[240px]">
+      <div
+        ref={containerRef}
+        className="relative rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 min-h-[240px]"
+      >
         <video
           ref={videoRef}
           className="w-full h-auto"
@@ -124,10 +200,15 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
         />
         {active && (
           <LandmarkVisualizer
-            landmarks={landmarks ? landmarks.map(lm => ({ ...lm, x: 1 - lm.x })) : null}
+            landmarks={landmarks}
             width={displaySize.width}
             height={displaySize.height}
           />
+        )}
+        {active && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div className="w-[55%] aspect-square border border-dashed border-zinc-600/50 rounded-2xl" />
+          </div>
         )}
         {!active && (
           <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/90">
@@ -150,10 +231,26 @@ export default function WebcamFeed({ onPrediction }: WebcamFeedProps) {
           </div>
         )}
         {active && (
-          <div className="absolute top-3 left-3 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-[10px] text-zinc-400 uppercase tracking-wider">Live</span>
+          <div className="absolute top-3 left-3 flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-[10px] text-zinc-400 uppercase tracking-wider">
+                Live
+              </span>
+            </div>
+            {statusLabel && (
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded border ${statusColor}`}
+              >
+                {statusLabel}
+              </span>
+            )}
           </div>
+        )}
+        {active && detectionStatus === 'missing' && (
+          <p className="absolute bottom-3 left-0 right-0 text-center text-[10px] text-zinc-500 pointer-events-none">
+            Center your hand, fill ~40% of frame
+          </p>
         )}
       </div>
 

@@ -1,0 +1,10 @@
+{
+  "samples": 68429,
+  "trainSamples": 54743,
+  "testSamples": 13686,
+  "noiseStd": 0.015,
+  "epochsRun": 36,
+  "bestValAccuracy": 95.7,
+  "testAccuracy": 95.7,
+  "finalTrainAccuracy": 93.35
+}
