@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   predictWithLandmarkNN,
   predictWithResnet,
@@ -10,7 +10,7 @@ import {
   isResnetModelLoaded,
   type Prediction,
 } from '@/lib/models';
-import { detectHandFromImage, resetTemporalHold } from '@/lib/landmarks';
+import { detectHandFromImage, setRunningMode } from '@/lib/landmarks';
 import {
   canvasToResnetImageData,
   drawSourceToCanvas,
@@ -26,7 +26,6 @@ export interface PredictionResult {
   resnetTop3?: { label: string; confidence: number }[];
   landmarkTop3?: { label: string; confidence: number }[];
   handTooSmall?: boolean;
-  detectionHeld?: boolean;
 }
 
 export function usePrediction() {
@@ -42,7 +41,7 @@ export function usePrediction() {
         const resnetReady = isResnetModelLoaded();
         const landmarkReady = isLandmarkModelLoaded();
 
-        resetTemporalHold();
+        setRunningMode('IMAGE');
         const handResult = detectHandFromImage(source);
         const canvas = drawSourceToCanvas(source);
 
@@ -81,7 +80,6 @@ export function usePrediction() {
           resnetTop3,
           landmarkTop3,
           handTooSmall,
-          detectionHeld: handResult?.held,
         });
       } catch (err) {
         console.error('Prediction error:', err);

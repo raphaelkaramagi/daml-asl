@@ -12,6 +12,8 @@ export default function SettingsPanel() {
     enableLandmark,
     landmarkLoaded,
     resnetLoaded,
+    resnetLoadError,
+    loadingModel,
     setDetectionConfidence,
     setEnableResnet,
     setEnableLandmark,
@@ -69,8 +71,22 @@ export default function SettingsPanel() {
                     <label className="flex items-center justify-between cursor-pointer">
                       <div>
                         <span className="text-sm text-white">ResNet50</span>
-                        <p className={`text-[10px] ${resnetLoaded ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                          {resnetLoaded ? 'Loaded (~23 MB)' : 'Loading...'}
+                        <p className={`text-[10px] ${
+                          resnetLoaded
+                            ? 'text-emerald-400'
+                            : resnetLoadError
+                              ? 'text-red-400'
+                              : loadingModel === 'resnet'
+                                ? 'text-zinc-500'
+                                : 'text-zinc-500'
+                        }`}>
+                          {resnetLoaded
+                            ? 'Loaded (~91 MB)'
+                            : resnetLoadError
+                              ? 'Failed to load'
+                              : loadingModel === 'resnet'
+                                ? 'Loading...'
+                                : 'Not loaded'}
                         </p>
                       </div>
                       <input

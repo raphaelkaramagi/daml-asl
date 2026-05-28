@@ -4,6 +4,7 @@ interface AppState {
   // Model loading
   landmarkLoaded: boolean;
   resnetLoaded: boolean;
+  resnetLoadError: string | null;
   landmarkProgress: number;
   resnetProgress: number;
   loadingModel: string | null;
@@ -17,6 +18,7 @@ interface AppState {
   // Actions
   setLandmarkLoaded: (loaded: boolean) => void;
   setResnetLoaded: (loaded: boolean) => void;
+  setResnetLoadError: (error: string | null) => void;
   setLandmarkProgress: (p: number) => void;
   setResnetProgress: (p: number) => void;
   setLoadingModel: (model: string | null) => void;
@@ -29,17 +31,19 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   landmarkLoaded: false,
   resnetLoaded: false,
+  resnetLoadError: null,
   landmarkProgress: 0,
   resnetProgress: 0,
   loadingModel: null,
 
-  detectionConfidence: 0.2,
+  detectionConfidence: 0.5,
   enableResnet: true,
   enableLandmark: true,
   darkMode: true,
 
   setLandmarkLoaded: (loaded) => set({ landmarkLoaded: loaded }),
   setResnetLoaded: (loaded) => set({ resnetLoaded: loaded }),
+  setResnetLoadError: (error) => set({ resnetLoadError: error }),
   setLandmarkProgress: (p) => set({ landmarkProgress: p }),
   setResnetProgress: (p) => set({ resnetProgress: p }),
   setLoadingModel: (model) => set({ loadingModel: model }),

@@ -3,40 +3,24 @@ import {
   HandLandmarker,
   type NormalizedLandmark,
 } from '@mediapipe/tasks-vision';
-import {
-  DETECTION_SCALES,
-  drawSourceToCanvas,
-  scaleCanvas,
-  upscaleCanvas,
-} from './image-utils';
 
 const MEDIAPIPE_VISION_VERSION = '0.10.34';
 const WASM_BASE = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VISION_VERSION}/wasm`;
 
 let handLandmarker: HandLandmarker | null = null;
 let initPromise: Promise<HandLandmarker> | null = null;
-let currentConfidence = 0.2;
-let currentTrackingConfidence = 0.5;
-
-/** Temporal hold: keep last detection briefly when video frame misses */
-let lastHandResult: HandDetectionResult | null = null;
-let missedFrames = 0;
-const MAX_MISSED_FRAMES = 3;
+let currentConfidence = 0.5;
 
 export interface HandDetectionResult {
   landmarks: NormalizedLandmark[];
   worldLandmarks: NormalizedLandmark[];
   features: number[];
-  /** True if result is held from a previous frame */
-  held?: boolean;
 }
 
 export async function initHandLandmarker(
-  minConfidence = 0.2,
-  minTrackingConfidence = 0.5
+  minConfidence = 0.5
 ): Promise<HandLandmarker> {
   currentConfidence = minConfidence;
-  currentTrackingConfidence = minTrackingConfidence;
 
   if (handLandmarker) return handLandmarker;
   if (initPromise) return initPromise;
@@ -55,7 +39,6 @@ export async function initHandLandmarker(
         numHands: 1,
         minHandDetectionConfidence: minConfidence,
         minHandPresenceConfidence: minConfidence,
-        minTrackingConfidence: minTrackingConfidence,
       });
 
     try {
@@ -69,18 +52,19 @@ export async function initHandLandmarker(
   return initPromise;
 }
 
-export function updateHandLandmarkerConfidence(
-  minConfidence: number,
-  minTrackingConfidence = currentTrackingConfidence
-): void {
+export function updateHandLandmarkerConfidence(minConfidence: number): void {
   currentConfidence = minConfidence;
-  currentTrackingConfidence = minTrackingConfidence;
   if (handLandmarker) {
     handLandmarker.setOptions({
       minHandDetectionConfidence: minConfidence,
       minHandPresenceConfidence: minConfidence,
-      minTrackingConfidence: minTrackingConfidence,
     });
+  }
+}
+
+export function setRunningMode(mode: 'IMAGE' | 'VIDEO') {
+  if (handLandmarker) {
+    handLandmarker.setOptions({ runningMode: mode });
   }
 }
 
@@ -95,12 +79,18 @@ export function extractFeaturesFromLandmarks(
   return features;
 }
 
-function parseDetectionResult(
-  result: ReturnType<HandLandmarker['detect']>
+/** Simple single-pass detection for gallery/upload (matches pre-session behavior). */
+export function detectHandFromImage(
+  image: HTMLImageElement | HTMLCanvasElement | HTMLVideoElement
 ): HandDetectionResult | null {
+  if (!handLandmarker) return null;
+
+  const result = handLandmarker.detect(image);
+
   if (!result.landmarks || result.landmarks.length === 0) {
     return null;
   }
+
   const landmarks = result.landmarks[0];
   const worldLandmarks = result.worldLandmarks?.[0] ?? landmarks;
   return {
@@ -110,58 +100,24 @@ function parseDetectionResult(
   };
 }
 
-function detectOnCanvas(canvas: HTMLCanvasElement): HandDetectionResult | null {
-  if (!handLandmarker) return null;
-  const result = handLandmarker.detect(canvas);
-  return parseDetectionResult(result);
-}
-
-/** Multi-scale IMAGE detection with optional mirror (matches Python training pipeline). */
-export function detectHandFromImage(
-  image: HTMLImageElement | HTMLCanvasElement | HTMLVideoElement,
-  options?: { mirror?: boolean }
+/** Webcam path: raw unmirrored video pixels (matches training data). */
+export function detectHandFromVideo(
+  video: HTMLVideoElement,
+  timestampMs: number
 ): HandDetectionResult | null {
   if (!handLandmarker) return null;
 
-  const baseCanvas = drawSourceToCanvas(image, { mirror: options?.mirror });
-  const upCanvas = upscaleCanvas(baseCanvas);
+  const result = handLandmarker.detectForVideo(video, timestampMs);
 
-  for (const scale of DETECTION_SCALES) {
-    const scaled = scaleCanvas(upCanvas, scale);
-    const detected = detectOnCanvas(scaled);
-    if (detected) {
-      return detected;
-    }
-  }
-  return null;
-}
-
-/** Webcam path: multi-scale IMAGE detection with temporal hold on brief misses. */
-export function detectHandWithHold(
-  image: HTMLImageElement | HTMLCanvasElement | HTMLVideoElement,
-  options?: { mirror?: boolean }
-): HandDetectionResult | null {
-  const detected = detectHandFromImage(image, options);
-  if (detected) {
-    lastHandResult = detected;
-    missedFrames = 0;
-    return detected;
+  if (!result.landmarks || result.landmarks.length === 0) {
+    return null;
   }
 
-  if (lastHandResult && missedFrames < MAX_MISSED_FRAMES) {
-    missedFrames += 1;
-    return { ...lastHandResult, held: true };
-  }
-
-  missedFrames += 1;
-  return null;
-}
-
-export function resetTemporalHold(): void {
-  lastHandResult = null;
-  missedFrames = 0;
-}
-
-export function getLastHandResult(): HandDetectionResult | null {
-  return lastHandResult;
+  const landmarks = result.landmarks[0];
+  const worldLandmarks = result.worldLandmarks?.[0] ?? landmarks;
+  return {
+    landmarks,
+    worldLandmarks,
+    features: extractFeaturesFromLandmarks(landmarks),
+  };
 }

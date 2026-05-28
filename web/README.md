@@ -46,7 +46,7 @@ python scripts/generate_hand_crops.py      # hand-cropped ResNet training set
 python scripts/train_resnet_improved.py    # 3-phase ResNet training (~4-8 hrs GPU)
 
 # Convert and export for web
-python scripts/convert_models.py           # → web/public/models/resnet-graph/
+python scripts/convert_models.py           # → web/public/models/resnet/ (layers-model)
 python scripts/evaluate_models.py          # → results/evaluation_results.json (+ web sync)
 python scripts/update_results_doc.py       # → docs/RESULTS.md
 python scripts/prepare_samples.py          # → web/public/samples/
@@ -58,13 +58,16 @@ Landmark-only retrain (no ResNet work):
 python scripts/run_landmark_pipeline.py
 ```
 
-### Inference improvements (no retrain required)
+### Webcam inference notes
 
-The web app uses shared detection logic mirrored from `scripts/mediapipe_detect.py`:
-- IMAGE-mode multi-scale detection retry (1×, 1.5×, 2× upscale) for webcam, upload, and gallery
+**Do not mirror webcam pixels before feature extraction.** Training photos are unmirrored; mirroring the video/canvas before MediaPipe or ResNet changes hand geometry relative to training and degrades Landmark NN live accuracy. The UI mirrors the preview with CSS (`scaleX(-1)`) and flips landmark x-coordinates in the overlay only.
+
+Shared detection for gallery/upload:
+
+- Single-pass IMAGE-mode detection (`detectHandFromImage`)
 - Hand-crop before ResNet inference (when landmarks detected)
-- Configurable detection confidence (Settings panel)
-- Temporal hold on webcam; pauses when scrolled off-screen
+- Configurable detection confidence (Settings panel, default 0.5)
+- Webcam pauses inference when scrolled off-screen
 
 ### Model files (already committed)
 
@@ -72,8 +75,8 @@ The converted model files are committed to the repo under `web/public/models/`:
 
 | Path | Format | Size | Notes |
 |---|---|---|---|
-| `models/landmark-nn/` | TF.js layers model | ~72 KB weights | Used for landmark NN inference |
-| `models/resnet-graph/` | TF.js graph model | ~23 MB (uint8 quantized) | Used for ResNet50 inference |
+| `models/landmark-nn/` | TF.js layers model | ~72 KB weights | Pre-session weights for live parity |
+| `models/resnet/` | TF.js layers model | ~91 MB | Retrained ResNet50 (browser-compatible) |
 | `models/preprocessing.json` | JSON | <1 KB | StandardScaler mean/scale + class names |
 
 ---
