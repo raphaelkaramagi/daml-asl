@@ -15,14 +15,14 @@ Two fundamentally different approaches are compared side by side:
 
 ## Results
 
-See **[docs/RESULTS.md](docs/RESULTS.md)** for the latest training metrics.
+See **[docs/RESULTS.md](docs/RESULTS.md)** for full training and evaluation metrics.
 
-| Model | Val Accuracy | Test Accuracy | Model Size | Training Time |
+| Model | Val / split accuracy | 28-photo test (end-to-end) | Parameters | Web deploy size |
 |---|---|---|---|---|
-| **ResNet50** (hand-cropped retrain) | — | **96.4%** (27/28) | 208 MB (23 MB quantized) | ~4 hours |
-| **Landmark NN** | 95.27% | 95.27% (split) | ~244 KB | ~2 min |
+| **ResNet50** (hand-cropped retrain) | — | **96.4%** (27/28) | ~23.6M | ~91 MB TF.js graph |
+| **Landmark NN** (deployed weights) | **98.97%** val | **67.9%** e2e · **100%** given detection | ~18K | ~72 KB TF.js |
 
-> On the 28-photo test set, end-to-end accuracy depends on MediaPipe detection rate. Run `python scripts/evaluate_models.py` after retraining for fair comparison.
+> End-to-end accuracy on the 28-photo test set depends on MediaPipe detection rate (67.9% at conf=0.2). The Landmark NN classifier is perfect when a hand is detected. Run `python scripts/evaluate_models.py` after retraining to refresh metrics.
 
 ---
 
@@ -102,10 +102,9 @@ A full interactive web demo lives in `web/`. It runs entirely in the browser —
 - Live webcam prediction with MediaPipe hand skeleton overlay
 - Image upload prediction
 - Side-by-side ResNet50 vs Landmark NN results with confidence bars
-- Training replay — animated epoch-by-epoch charts from real training runs
-- In-browser micro training (TF.js)
-- Model architecture comparison
+- Model architecture comparison with evaluation metrics
 - Sample gallery — browse all 29 classes, click to predict
+- Settings — toggle models, adjust detection confidence
 
 See [`web/README.md`](web/README.md) for development and deployment instructions.
 
@@ -153,10 +152,9 @@ daml-asl/
 └── web/                             # Next.js web demo
     ├── public/
     │   ├── models/
-    │   │   ├── landmark-nn/         # TF.js layers model (~72 KB weights)
-    │   │   └── resnet-graph/        # TF.js graph model (~23 MB, uint8 quantized)
-    │   ├── samples/                 # Resized sample images + manifest.json
-    │   └── training-data.json       # Epoch metrics for training replay
+│   │   ├── landmark-nn/         # TF.js layers model (~72 KB weights)
+│   │   └── resnet-graph/        # TF.js float32 graph model (~91 MB)
+│   ├── samples/                 # Resized sample images + manifest.json
     └── src/
         ├── app/                     # Next.js App Router (layout, page, globals)
         ├── components/              # UI components
@@ -175,7 +173,7 @@ daml-asl/
 - **Architecture:** ResNet50 (ImageNet pretrained) → GlobalAveragePooling2D → Dropout(0.2) → Dense(128, ReLU) → Dropout(0.2) → Dense(29, Softmax)
 - **Training:** 2-phase — Phase 1 (10 epochs, frozen backbone, lr=0.001) then Phase 2 (10 epochs, layers 143+ unfrozen, lr=0.0001)
 - **Parameters:** ~23.6M
-- **Web:** Converted to TF.js graph model with uint8 quantisation (208 MB → 23 MB)
+- **Web:** Converted to TF.js float32 graph model (~91 MB deployed; 208 MB Keras checkpoint)
 
 ### Approach 2: Landmark Neural Network
 
@@ -183,7 +181,7 @@ daml-asl/
 - **Architecture:** Dense(128, ReLU) → Dropout(0.3) → Dense(64, ReLU) → Dropout(0.3) → Dense(29, Softmax)
 - **Training:** Adam, sparse categorical crossentropy, early stopping (patience=5), trained for 29 epochs
 - **Parameters:** ~18K
-- **Web:** TF.js layers model, 244 KB
+- **Web:** TF.js layers model, ~72 KB
 
 ---
 

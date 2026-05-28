@@ -21,20 +21,20 @@ const MODELS = [
     ],
     stats: {
       parameters: '~23.6M',
-      modelSize: '208 MB (23 MB quantized)',
+      modelSize: '208 MB Keras (~91 MB TF.js)',
       trainingTime: '~4 hours (hand-cropped, Metal GPU)',
       bestValAccuracy: 'See docs/RESULTS.md',
-      testAccuracy: '96.4% (27/28)',
+      testAccuracy: '96.4% end-to-end (27/28)',
       detectionRate: '67.9% (shared MediaPipe)',
     },
     strengths: [
       'Best end-to-end accuracy (96.4%)',
       'Always produces a prediction',
-      'Hand-crop at inference when landmarks found',
+      'Hand-crop at eval when landmarks found',
       'Recommended for live demo',
     ],
     weaknesses: [
-      'Large model (~23 MB quantized)',
+      'Large model (~91 MB in browser)',
       'Slower inference than Landmark NN',
     ],
   },
@@ -52,17 +52,17 @@ const MODELS = [
     ],
     stats: {
       parameters: '~18K',
-      modelSize: '~244 KB',
-      trainingTime: '~2 min (re-extracted features)',
-      bestValAccuracy: '95.7%',
+      modelSize: '~72 KB TF.js',
+      trainingTime: '~2 min',
+      bestValAccuracy: '98.97%',
       testAccuracy: '100% given detection',
       detectionRate: '67.9% end-to-end on 28 photos',
     },
     strengths: [
       '100% accuracy when hand is detected',
-      'Extremely lightweight (~244 KB)',
+      'Extremely lightweight (~18K params)',
       'Instant inference (<1ms)',
-      'Same multi-scale detection as training pipeline',
+      'Ideal when MediaPipe finds a hand',
     ],
     weaknesses: [
       'Requires MediaPipe hand detection first',
@@ -177,12 +177,11 @@ export default function ModelComparison() {
             <h4 className="text-sm font-semibold text-white mb-1">Key Finding</h4>
             <p className="text-xs text-zinc-400 leading-relaxed">
               <span className="text-blue-400 font-semibold">ResNet50</span> is the primary model
-              for live demo — 96.4% end-to-end on the 28-photo test set, always predicting from
-              hand-cropped pixels.{' '}
+              for live demo — 96.4% end-to-end on the 28-photo test set (27/28), always predicting
+              from resized webcam or upload frames.{' '}
               <span className="text-emerald-400 font-semibold">Landmark NN</span> classifies
               wrist-relative geometry with 100% accuracy when MediaPipe detects a hand, but
-              end-to-end accuracy is limited to 67.9% by the shared detection rate. Both models
-              now use the same IMAGE-mode multi-scale MediaPipe pipeline in the browser.
+              end-to-end accuracy is limited to 67.9% by the shared detection rate.
             </p>
           </div>
         </div>

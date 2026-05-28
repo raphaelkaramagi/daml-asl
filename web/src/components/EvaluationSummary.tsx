@@ -71,8 +71,8 @@ export default function EvaluationSummary() {
       <div className="space-y-2 text-xs text-zinc-400 leading-relaxed">
         <p>
           <span className="text-blue-400 font-medium">ResNet50</span> is the recommended
-          primary model for live demo — it uses hand-cropped pixels and always produces a
-          prediction ({data.resnetEndToEnd.toFixed(1)}% end-to-end).
+          primary model for live demo — it always produces a prediction
+          ({data.resnetEndToEnd.toFixed(1)}% end-to-end on the 28-photo test set).
         </p>
         <p>
           <span className="text-emerald-400 font-medium">Landmark NN</span> is lightweight

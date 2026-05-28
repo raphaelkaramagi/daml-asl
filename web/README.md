@@ -41,15 +41,15 @@ conda activate daml-asl
 
 # Optional: retrain with improved pipeline
 python scripts/reextract_landmarks.py      # improved landmark CSV
-# ... train landmark NN (notebook 06) ...
+python scripts/train_landmark_nn.py        # landmark classifier
 python scripts/generate_hand_crops.py      # hand-cropped ResNet training set
 python scripts/train_resnet_improved.py    # 3-phase ResNet training (~4-8 hrs GPU)
 
 # Convert and export for web
-python scripts/convert_models.py           # → web/public/models/resnet/ (layers-model)
-python scripts/evaluate_models.py          # → results/evaluation_results.json (+ web sync)
-python scripts/update_results_doc.py       # → docs/RESULTS.md
-python scripts/prepare_samples.py          # → web/public/samples/
+python scripts/convert_models.py           # → web/public/models/resnet-graph/ (float32 graph)
+python scripts/evaluate_models.py        # → results/evaluation_results.json (+ web sync)
+python scripts/update_results_doc.py     # → docs/RESULTS.md
+python scripts/prepare_samples.py        # → web/public/samples/
 ```
 
 Landmark-only retrain (no ResNet work):
@@ -62,21 +62,18 @@ python scripts/run_landmark_pipeline.py
 
 **Do not mirror webcam pixels before feature extraction.** Training photos are unmirrored; mirroring the video/canvas before MediaPipe or ResNet changes hand geometry relative to training and degrades Landmark NN live accuracy. The UI mirrors the preview with CSS (`scaleX(-1)`) and flips landmark x-coordinates in the overlay only.
 
-Shared detection for gallery/upload:
+Gallery/upload inference:
 
 - Single-pass IMAGE-mode detection (`detectHandFromImage`)
-- Hand-crop before ResNet inference (when landmarks detected)
-- Configurable detection confidence (Settings panel, default 0.5)
-- Webcam pauses inference when scrolled off-screen
+- Small images (&lt;300px) upscaled before MediaPipe detection
+- Configurable detection confidence (Settings panel, default **0.3**)
 
-### Model files (already committed)
-
-The converted model files are committed to the repo under `web/public/models/`:
+### Model files (committed)
 
 | Path | Format | Size | Notes |
 |---|---|---|---|
-| `models/landmark-nn/` | TF.js layers model | ~72 KB weights | Pre-session weights for live parity |
-| `models/resnet/` | TF.js layers model | ~91 MB | Retrained ResNet50 (browser-compatible) |
+| `models/landmark-nn/` | TF.js layers model | ~72 KB | Original weights (~18K params) for live parity |
+| `models/resnet-graph/` | TF.js graph model | ~91 MB | Retrained ResNet50, float32 (browser-compatible) |
 | `models/preprocessing.json` | JSON | <1 KB | StandardScaler mean/scale + class names |
 
 ---
@@ -120,7 +117,7 @@ web/src/
 │   └── useWebcam.ts     # Camera stream lifecycle
 ├── lib/
 │   ├── models.ts        # loadLandmarkModel, loadResnetModel, predict functions
-│   ├── landmarks.ts     # MediaPipe HandLandmarker init + IMAGE-mode detection
+│   ├── landmarks.ts     # MediaPipe HandLandmarker init + detection
 │   └── constants.ts     # CLASS_NAMES, MODEL_PATHS, HAND_CONNECTIONS
 └── store/
     └── app-store.ts     # Zustand store (model loaded state, settings)
@@ -163,6 +160,6 @@ npm run build   # Outputs static site to out/
 
 - All inference is client-side — no API routes or server functions are used
 - MediaPipe WASM and the hand landmark model are loaded from CDN on first use
-- The ResNet50 graph model (~23 MB) is quantized to uint8, reducing the original 208 MB by ~9×
-- Detection confidence defaults to 0.3; adjustable in the Settings panel
-- Small images (< 300px) are upscaled before MediaPipe detection to improve reliability
+- ResNet50 graph model is ~91 MB float32 (reliable browser loading); first load may take a moment on slow connections
+- Detection confidence defaults to **0.3**; adjustable in the Settings panel
+- Small images (&lt;300px) are upscaled before MediaPipe detection on upload/gallery paths

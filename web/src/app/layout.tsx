@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'ASL Alphabet Recognition',
     description:
-      'Interactive demo comparing ResNet50 and Landmark NN for American Sign Language alphabet classification. Live webcam predictions, training replay, and more.',
+      'Interactive demo comparing ResNet50 and Landmark NN for American Sign Language alphabet classification. Live webcam and image upload predictions.',
     images: [{ url: '/og-image.png', width: 512, height: 512 }],
     type: 'website',
   },
